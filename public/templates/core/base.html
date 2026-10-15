@@ -10,33 +10,13 @@
 </head>
 <body>
 
-<header class="site-header">
-    <div class="container site-header__inner">
-        <a href="{% url 'public:home' %}" class="site-header__logo">{{ contacts.company_name }}</a>
+    {% include "includes/header.html" %}
 
-        <nav class="site-nav">
-            <a href="#services">Услуги</a>
-            <a href="#advantages">Преимущества</a>
-            <a href="#contacts">Контакты</a>
-            <a href="#contacts" class="btn btn--accent btn--small">Записаться</a>
-        </nav>
-    </div>
-</header>
+    <main class="site-main">
+        {% block content %}{% endblock %}
+    </main>
 
-<main>
-    {% block content %}{% endblock %}
-</main>
-
-<footer class="site-footer">
-    <div class="container site-footer__inner">
-        <div>
-            &copy; {% now "Y" %} {{ contacts.company_name }}. Казань.
-        </div>
-        <div>
-            <a href="tel:{{ contacts.phone_raw }}">{{ contacts.phone_display }}</a>
-        </div>
-    </div>
-</footer>
+    {% include "includes/footer.html" %}
 
 </body>
 </html>

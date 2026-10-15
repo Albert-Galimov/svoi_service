@@ -1,0 +1,12 @@
+<header class="site-header">
+    <div class="container site-header__inner">
+        <a href="{% url 'public:home' %}" class="site-header__logo">{{ contacts.company_name }}</a>
+
+        <nav class="site-nav">
+            <a href="{% url 'public:home' %}#services">Услуги</a>
+            <a href="{% url 'public:home' %}#advantages">Преимущества</a>
+            <a href="{% url 'public:home' %}#contacts">Контакты</a>
+            <a href="{% url 'public:home' %}#booking" class="btn btn--accent btn--small">Записаться</a>
+        </nav>
+    </div>
+</header>

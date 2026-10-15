@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+
+{% block title %}Заявка отправлена — {{ contacts.company_name }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container thanks">
+        <h1 class="thanks__title">Спасибо, заявка принята</h1>
+        <p class="thanks__text">
+            Мы получили вашу заявку и перезвоним в ближайшее время,
+            чтобы уточнить детали и подтвердить удобное время.
+        </p>
+        <p class="thanks__text">
+            Если нужно срочно — звоните:
+            <a href="tel:{{ contacts.phone_raw }}">{{ contacts.phone_display }}</a>
+        </p>
+        <p>
+            <a href="{% url 'public:home' %}" class="btn btn--accent">На главную</a>
+        </p>
+    </div>
+</section>
+{% endblock %}
