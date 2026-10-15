@@ -1,0 +1,10 @@
+<footer class="site-footer">
+    <div class="container site-footer__inner">
+        <div>
+            &copy; {% now "Y" %} {{ contacts.company_name }}. Казань.
+        </div>
+        <div>
+            <a href="tel:{{ contacts.phone_raw }}">{{ contacts.phone_display }}</a>
+        </div>
+    </div>
+</footer>

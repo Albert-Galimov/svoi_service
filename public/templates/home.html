@@ -1,16 +1,163 @@
 {% extends "core/base.html" %}
 
-{% block title %}Главная — Автосервис в Казани{% endblock %}
+{% block title %}{{ contacts.company_name }} — ремонт авто в Казани{% endblock %}
 
 {% block content %}
-    <h1>Ремонт авто в Казани</h1>
-    <p>Два подъёмника, честные цены, работаем с отечественными и импортными авто.</p>
 
-    <h2>Услуги</h2>
-    <ul>
-        <li>Замена масла и фильтров — от 500 ₽</li>
-        <li>Диагностика подвески — от 800 ₽</li>
-        <li>Замена тормозных колодок — от 1 200 ₽</li>
-    </ul>
-    <p><em>Точная стоимость — после осмотра автомобиля.</em></p>
+{# --- Первый экран (hero) --- #}
+<section class="hero">
+    <div class="container hero__inner">
+        <h1 class="hero__title">Ремонт авто в Казани без сюрпризов в счёте</h1>
+        <p class="hero__subtitle">
+            Два подъёмника, честные цены, работаем с отечественными и импортными авто.
+            Скажем, что нужно сделать, и сколько это будет стоить — до начала работ.
+        </p>
+        <div class="hero__actions">
+            <a href="#booking" class="btn btn--accent btn--large">Записаться на ремонт</a>
+            <a href="#services" class="btn btn--ghost btn--large">Смотреть услуги и цены</a>
+        </div>
+    </div>
+</section>
+
+{# --- Услуги --- #}
+<section id="services" class="section section--alt">
+    <div class="container">
+        <h2 class="section__title">Услуги</h2>
+        <p class="section__lead">
+            Цены — минимальные, «от». Точную стоимость называем после осмотра автомобиля.
+        </p>
+
+        <ul class="services">
+            {% for service in services %}
+                <li class="service-card">
+                    <div class="service-card__head">
+                        <h3 class="service-card__name">{{ service.name }}</h3>
+                        <div class="service-card__price">от {{ service.price_from }} ₽</div>
+                    </div>
+                    <p class="service-card__description">{{ service.description }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <p class="section__note">
+            Точная стоимость — после осмотра автомобиля.
+            Запчасти и расходники — ваши или наши, по договорённости.
+        </p>
+    </div>
+</section>
+
+{# --- Преимущества --- #}
+<section id="advantages" class="section">
+    <div class="container">
+        <h2 class="section__title">Почему к нам</h2>
+
+        <ul class="advantages">
+            <li class="advantage">
+                <div class="advantage__icon">🔧</div>
+                <h3 class="advantage__title">Два подъёмника</h3>
+                <p class="advantage__text">
+                    Работаем с двумя машинами одновременно — не приходится ждать в очереди неделю.
+                </p>
+            </li>
+            <li class="advantage">
+                <div class="advantage__icon">💬</div>
+                <h3 class="advantage__title">Понятные объяснения</h3>
+                <p class="advantage__text">
+                    Рассказываем простыми словами, что сломалось и почему. Без «ну там всё сложно».
+                </p>
+            </li>
+            <li class="advantage">
+                <div class="advantage__icon">💰</div>
+                <h3 class="advantage__title">Честная смета</h3>
+                <p class="advantage__text">
+                    Согласуем стоимость до начала работ. Не согласен с ценой — ничего не должны.
+                </p>
+            </li>
+            <li class="advantage">
+                <div class="advantage__icon">📋</div>
+                <h3 class="advantage__title">История по вашей машине</h3>
+                <p class="advantage__text">
+                    Все работы и запчасти фиксируем — при следующем визите видим, что делали раньше.
+                </p>
+            </li>
+        </ul>
+    </div>
+</section>
+
+{# --- Контакты и форма заявки --- #}
+<section id="contacts" class="section section--alt">
+    <div class="container">
+        <h2 class="section__title">Контакты</h2>
+
+        <div class="contacts">
+            <div class="contacts__col">
+                <h3 class="contacts__label">Адрес</h3>
+                <p>{{ contacts.address }}</p>
+
+                <h3 class="contacts__label">Телефон</h3>
+                <p><a href="tel:{{ contacts.phone_raw }}">{{ contacts.phone_display }}</a></p>
+
+                <h3 class="contacts__label">Часы работы</h3>
+                <p>
+                    {{ contacts.hours_weekday }}<br>
+                    {{ contacts.hours_saturday }}<br>
+                    {{ contacts.hours_sunday }}
+                </p>
+            </div>
+
+            <div class="contacts__col" id="booking">
+                <h3 class="contacts__label">Оставить заявку</h3>
+                <p class="contacts__hint">
+                    Оставьте телефон — мы перезвоним, уточним детали
+                    и предложим удобное время.
+                </p>
+
+                <form method="post"
+                      action="{% url 'public:booking_create' %}"
+                      class="booking-form"
+                      novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="form-errors">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="form-row">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            {{ form.name.label }}<span class="form-label__required">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="form-error">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.phone.id_for_label }}" class="form-label">
+                            {{ form.phone.label }}<span class="form-label__required">*</span>
+                        </label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                            <div class="form-error">{{ form.phone.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn--accent btn--block">
+                        Отправить заявку
+                    </button>
+
+                    <p class="form-hint">
+                        Нажимая «Отправить», вы соглашаетесь на обработку персональных данных.
+                        Мы позвоним, чтобы уточнить детали.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
 {% endblock %}
