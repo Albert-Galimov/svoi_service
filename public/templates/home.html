@@ -84,13 +84,16 @@
     </div>
 </section>
 
-{# --- Контакты и форма заявки --- #}
+{# --- Контакты с картой --- #}
 <section id="contacts" class="section section--alt">
     <div class="container">
         <h2 class="section__title">Контакты</h2>
+        <p class="section__lead">
+            Заезжайте или звоните — мы на связи в рабочее время.
+        </p>
 
         <div class="contacts">
-            <div class="contacts__col">
+            <div class="contacts__info">
                 <h3 class="contacts__label">Адрес</h3>
                 <p>{{ contacts.address }}</p>
 
@@ -103,59 +106,94 @@
                     {{ contacts.hours_saturday }}<br>
                     {{ contacts.hours_sunday }}
                 </p>
-            </div>
 
-            <div class="contacts__col" id="booking">
-                <h3 class="contacts__label">Оставить заявку</h3>
-                <p class="contacts__hint">
-                    Оставьте телефон — мы перезвоним, уточним детали
-                    и предложим удобное время.
+                <h3 class="contacts__label">Как нас найти</h3>
+                <p>
+                    Свободная парковка у входа. Приёмка машин — с торца здания,
+                    ориентир — вывеска на воротах.
                 </p>
-
-                <form method="post"
-                      action="{% url 'public:booking_create' %}"
-                      class="booking-form"
-                      novalidate>
-                    {% csrf_token %}
-
-                    {% if form.non_field_errors %}
-                        <div class="form-errors">
-                            {% for error in form.non_field_errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-
-                    <div class="form-row">
-                        <label for="{{ form.name.id_for_label }}" class="form-label">
-                            {{ form.name.label }}<span class="form-label__required">*</span>
-                        </label>
-                        {{ form.name }}
-                        {% if form.name.errors %}
-                            <div class="form-error">{{ form.name.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="form-row">
-                        <label for="{{ form.phone.id_for_label }}" class="form-label">
-                            {{ form.phone.label }}<span class="form-label__required">*</span>
-                        </label>
-                        {{ form.phone }}
-                        {% if form.phone.errors %}
-                            <div class="form-error">{{ form.phone.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
-                    <button type="submit" class="btn btn--accent btn--block">
-                        Отправить заявку
-                    </button>
-
-                    <p class="form-hint">
-                        Нажимая «Отправить», вы соглашаетесь на обработку персональных данных.
-                        Мы позвоним, чтобы уточнить детали.
-                    </p>
-                </form>
             </div>
+
+            <div class="contacts__map">
+                <iframe
+                    src="https://yandex.ru/map-widget/v1/-/CXFm446W"
+                    width="100%"
+                    height="100%"
+                    frameborder="0"
+                    loading="lazy"
+                    title="Карта: как нас найти"
+                    allowfullscreen
+                ></iframe>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# --- Запись на ремонт (форма) --- #}
+<section id="booking" class="section">
+    <div class="container">
+        <div class="booking-wrap">
+            <div class="booking-head">
+                <h2 class="section__title">Записаться на ремонт</h2>
+                <p class="section__lead">
+                    Оставьте телефон — перезвоним, уточним детали и предложим удобное время.
+                </p>
+            </div>
+
+            <form method="post"
+                  action="{% url 'public:booking_create' %}"
+                  class="booking-form"
+                  novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="form-errors">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="form-row">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                        {{ form.name.label }}<span class="form-label__required">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="form-error">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-row">
+                    <label for="{{ form.phone.id_for_label }}" class="form-label">
+                        {{ form.phone.label }}<span class="form-label__required">*</span>
+                    </label>
+                    {{ form.phone }}
+                    {% if form.phone.errors %}
+                        <div class="form-error">{{ form.phone.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-row">
+                    <label for="{{ form.comment.id_for_label }}" class="form-label">
+                        {{ form.comment.label }}
+                        <span class="form-label__optional">— необязательно</span>
+                    </label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <div class="form-error">{{ form.comment.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn--accent btn--block">
+                    Отправить заявку
+                </button>
+
+                <p class="form-hint">
+                    Нажимая «Отправить», вы соглашаетесь на обработку персональных данных.
+                    Мы позвоним, чтобы уточнить детали.
+                </p>
+            </form>
         </div>
     </div>
 </section>
