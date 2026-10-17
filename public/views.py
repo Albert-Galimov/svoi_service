@@ -30,7 +30,7 @@ def booking_create(request):
         "services": SERVICES,
         "contacts": CONTACTS,
         "form": form,
-        "scroll_to": "contacts",  # подсказка шаблону, куда прокрутить
+        "scroll_to": "booking",  # подсказка шаблону, куда прокрутить
     }
     return render(request, "home.html", context)
 

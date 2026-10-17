@@ -174,17 +174,6 @@
                     {% endif %}
                 </div>
 
-                <div class="form-row">
-                    <label for="{{ form.comment.id_for_label }}" class="form-label">
-                        {{ form.comment.label }}
-                        <span class="form-label__optional">— необязательно</span>
-                    </label>
-                    {{ form.comment }}
-                    {% if form.comment.errors %}
-                        <div class="form-error">{{ form.comment.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
                 <button type="submit" class="btn btn--accent btn--block">
                     Отправить заявку
                 </button>
@@ -197,5 +186,17 @@
         </div>
     </div>
 </section>
+
+
+{% if scroll_to %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var target = document.getElementById("{{ scroll_to }}");
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    </script>
+{% endif %}
 
 {% endblock %}
