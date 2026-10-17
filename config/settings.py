@@ -1,8 +1,15 @@
+import os
+
+from dotenv import load_dotenv
+
 from pathlib import Path
+
+# Читаем переменные окружения из .env (в корне проекта).
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-dht%#bwjiid9wyx=&78(+f)bj@5$19&qw3wbsb=8fcq#hv$)&9'
+SECRET_KEY = os.getenv('SECRET_KEY', 'testing_secret_key')
 
 DEBUG = True
 
@@ -16,6 +23,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'public.apps.PublicConfig',
+    'notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [
