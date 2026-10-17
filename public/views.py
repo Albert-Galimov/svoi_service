@@ -1,10 +1,16 @@
-from django.shortcuts import render, redirect
+import logging
 
-from core.constants import SERVICES, CONTACTS
+from django.shortcuts import redirect, render
+
+from core.constants import CONTACTS, SERVICES
+
 from core.forms import BookingForm
 
+logger = logging.getLogger(__name__)
+
+
 def home(request):
-    """Главная страница. Лендинг"""
+    """Главная страница: лендинг + форма заявки."""
     context = {
         "services": SERVICES,
         "contacts": CONTACTS,
@@ -12,17 +18,16 @@ def home(request):
     }
     return render(request, "home.html", context)
 
+
 def booking_create(request):
     """Приём заявки с формы. Только POST."""
-    # Если кто-то открыл URL в браузере напрямую (GET) — просто на главную.
+    # Если кто-то открыл URL руками (GET) — просто на главную.
     if request.method != "POST":
         return redirect("public:home")
 
     form = BookingForm(request.POST)
     if form.is_valid():
         form.save()
-        # PRG-паттерн: после успешной отправки перенаправляем,
-        # чтобы F5 не отправлял заявку повторно.
         return redirect("public:thanks")
 
     # Если форма не прошла валидацию — возвращаем на главную с ошибками.
@@ -30,7 +35,7 @@ def booking_create(request):
         "services": SERVICES,
         "contacts": CONTACTS,
         "form": form,
-        "scroll_to": "booking",  # подсказка шаблону, куда прокрутить
+        "scroll_to": "booking",
     }
     return render(request, "home.html", context)
 
