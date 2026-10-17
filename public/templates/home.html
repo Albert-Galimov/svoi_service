@@ -1,4 +1,5 @@
 {% extends "core/base.html" %}
+{% load static %}
 
 {% block title %}{{ contacts.company_name }} — ремонт авто в Казани{% endblock %}
 
@@ -115,15 +116,16 @@
             </div>
 
             <div class="contacts__map">
-                <iframe
-                    src="https://yandex.ru/map-widget/v1/-/CXFm446W"
-                    width="100%"
-                    height="100%"
-                    frameborder="0"
-                    loading="lazy"
-                    title="Карта: как нас найти"
-                    allowfullscreen
-                ></iframe>
+                <a href="https://yandex.ru/maps/?pt=55.836463, 49.028270&z=16&l=map"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="contacts__map-link"
+                   title="Открыть в Яндекс Картах">
+                    <img src="{% static 'img/map.png' %}"
+                         alt="Карта: как добраться до автосервиса"
+                         class="contacts__map-img">
+                    <span class="contacts__map-hint">Нажмите, чтобы открыть в навигаторе</span>
+                </a>
             </div>
         </div>
     </div>
