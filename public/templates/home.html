@@ -1,4 +1,5 @@
 {% extends "core/base.html" %}
+{% load static %}
 
 {% block title %}{{ contacts.company_name }} — ремонт авто в Казани{% endblock %}
 
@@ -50,6 +51,10 @@
 <section id="advantages" class="section">
     <div class="container">
         <h2 class="section__title">Почему к нам</h2>
+        <p class="section__lead">
+            Мы не сетевой сервис с прайсом на всё. Работаем на себя — поэтому дорожим
+            каждым клиентом и не берём деньги за воздух. Вот что это значит на практике.
+        </p>
 
         <ul class="advantages">
             <li class="advantage">
@@ -115,15 +120,16 @@
             </div>
 
             <div class="contacts__map">
-                <iframe
-                    src="https://yandex.ru/map-widget/v1/-/CXFm446W"
-                    width="100%"
-                    height="100%"
-                    frameborder="0"
-                    loading="lazy"
-                    title="Карта: как нас найти"
-                    allowfullscreen
-                ></iframe>
+                <a href="https://yandex.ru/maps/?pt=55.836463, 49.028270&z=16&l=map"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="contacts__map-link"
+                   title="Открыть в Яндекс Картах">
+                    <img src="{% static 'img/map.png' %}"
+                         alt="Карта: как добраться до автосервиса"
+                         class="contacts__map-img">
+                    <span class="contacts__map-hint">Нажмите, чтобы открыть в навигаторе</span>
+                </a>
             </div>
         </div>
     </div>
@@ -174,17 +180,6 @@
                     {% endif %}
                 </div>
 
-                <div class="form-row">
-                    <label for="{{ form.comment.id_for_label }}" class="form-label">
-                        {{ form.comment.label }}
-                        <span class="form-label__optional">— необязательно</span>
-                    </label>
-                    {{ form.comment }}
-                    {% if form.comment.errors %}
-                        <div class="form-error">{{ form.comment.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
                 <button type="submit" class="btn btn--accent btn--block">
                     Отправить заявку
                 </button>
@@ -197,5 +192,17 @@
         </div>
     </div>
 </section>
+
+
+{% if scroll_to %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var target = document.getElementById("{{ scroll_to }}");
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    </script>
+{% endif %}
 
 {% endblock %}

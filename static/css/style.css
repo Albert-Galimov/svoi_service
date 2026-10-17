@@ -234,7 +234,6 @@ h4 {
     justify-content: space-between;
     padding: 16px 20px;
     gap: 20px;
-    flex-wrap: wrap;
 }
 
 .site-header__logo {
@@ -242,17 +241,61 @@ h4 {
     font-size: 20px;
     font-weight: 700;
     letter-spacing: .2px;
+    flex-shrink: 0;
 }
 
 .site-header__logo:hover {
     color: #fff;
 }
 
+/* --- Кнопка-бургер (только для мобильных) --- */
+
+.site-header__toggle {
+    display: none;                       /* на десктопе скрыта */
+    background: transparent;
+    border: 0;
+    padding: 8px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    transition: background-color .15s ease;
+}
+
+.site-header__toggle:hover {
+    background: rgba(255, 255, 255, .1);
+}
+
+.site-header__toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+    transition: transform .2s ease, opacity .2s ease;
+}
+
+/* Анимация «бургер → крестик» при открытом меню */
+.site-header__toggle.is-active span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+.site-header__toggle.is-active span:nth-child(2) {
+    opacity: 0;
+}
+.site-header__toggle.is-active span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* --- Навигация (десктоп: строка ссылок) --- */
+
 .site-nav {
     display: flex;
     align-items: center;
     gap: 24px;
-    flex-wrap: wrap;
 }
 
 .site-nav a {
@@ -446,22 +489,61 @@ h4 {
     margin-top: 0;
 }
 
-/* --- Карта --- */
+/* --- Карта (статичная картинка) --- */
 
 .contacts__map {
     border-radius: var(--radius-lg);
-    overflow: hidden;        /* обрезает прямые углы iframe под наши скругления */
-    background: var(--color-bg-alt);
+    overflow: hidden;
     border: 1px solid var(--color-border);
-    min-height: 420px;
+    height: 400px; /* фиксированная высота, как и раньше */
+    position: relative;
 }
 
-.contacts__map iframe {
+.contacts__map-link {
     display: block;
     width: 100%;
     height: 100%;
-    min-height: 420px;
-    border: 0;
+    position: relative;
+    text-decoration: none;
+}
+
+.contacts__map-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* картинка заполняет блок, не искажаясь */
+    display: block;
+}
+
+/* Подсказка, которая появляется при наведении (на десктопе) */
+.contacts__map-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+    pointer-events: none; /* чтобы подсказка не мешала клику */
+}
+
+.contacts__map-link:hover .contacts__map-hint {
+    opacity: 1;
+}
+
+/* На мобильных подсказка не нужна — там и так понятно */
+@media (max-width: 720px) {
+    .contacts__map {
+        height: 320px;
+    }
+    .contacts__map-hint {
+        display: none;
+    }
 }
 
 
@@ -677,16 +759,78 @@ h4 {
    ========================================================= */
 
 @media (max-width: 720px) {
-    h1 { font-size: 30px; }
+    h1 { font-size: 28px; }
     h2 { font-size: 24px; }
 
+    /* --- Мобильная шапка с бургер-меню --- */
+
+    .site-header__toggle {
+        display: flex;
+    }
+
+    /* Меню — выпадающая панель под шапкой.
+       Позиционируется относительно .site-header (он sticky = containing block). */
+    .site-nav {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--color-primary-dark);
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding: 8px 0;
+        /* Плавное раскрытие через max-height — не требует JS-измерения высоты */
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height .25s ease;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
+    }
+
+    .site-nav.is-open {
+        max-height: 400px;   /* с запасом на все пункты */
+    }
+
+    .site-nav a {
+        padding: 14px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, .06);
+        font-size: 15px;
+    }
+
+    .site-nav a:hover {
+        background: rgba(255, 255, 255, .05);
+    }
+
+    /* Кнопка «Записаться» — отдельный акцентный блок внизу меню */
+    .site-nav a.btn {
+        margin: 10px 20px 8px;
+        padding: 14px 20px;
+        text-align: center;
+        border-bottom: 0;
+        border-radius: var(--radius);
+    }
+
+    /* --- Hero --- */
+
     .hero {
-        padding: 64px 0 56px;
+        padding: 56px 0 48px;
     }
 
     .hero__subtitle {
         font-size: 16px;
     }
+
+    /* Кнопки в hero — одна под другой на всю ширину: удобнее тапать */
+    .hero__actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hero__actions .btn {
+        width: 100%;
+    }
+
+    /* --- Секции --- */
 
     .section {
         padding: 48px 0;
@@ -697,13 +841,8 @@ h4 {
         gap: 28px;
     }
 
-    /* Карта становится ниже, чтобы не занимать весь экран. */
     .contacts__map {
-        min-height: 300px;
-    }
-
-    .contacts__map iframe {
-        min-height: 300px;
+        height: 300px;
     }
 
     .form-row--split {
@@ -712,9 +851,5 @@ h4 {
 
     .site-header__inner {
         padding: 14px 20px;
-    }
-
-    .site-nav {
-        gap: 16px;
     }
 }

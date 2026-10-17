@@ -23,7 +23,8 @@ class PhoneField(models.CharField):
     def to_python(self, value):
         if value in (None, ""):
             return value
-        return normalize_phone(value)
+        normalized = normalize_phone(value)
+        return normalized if normalized else value
 
     def get_prep_value(self, value):
         if value in (None, ""):
