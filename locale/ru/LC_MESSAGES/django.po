@@ -1995,7 +1995,7 @@ msgstr ""
 
 #: .\venv\Lib\site-packages\unfold\templates\registration\logged_out.html:14
 msgid "You have been successfully logged out from the administration"
-msgstr ""
+msgstr "Вы успешно вышли из системы администрирования"
 
 #: .\venv\Lib\site-packages\unfold\templates\registration\logged_out.html:18
 msgid "Thanks for spending some quality time with the web site today."
