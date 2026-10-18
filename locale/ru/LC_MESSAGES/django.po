@@ -2280,7 +2280,7 @@ msgstr ""
 
 #: .\venv\Lib\site-packages\unfold\templates\unfold\helpers\unauthenticated_header.html:6
 msgid "Return to site"
-msgstr ""
+msgstr "Вернуться на сайт"
 
 #: .\venv\Lib\site-packages\unfold\templates\unfold\helpers\welcomemsg.html:23
 #, python-format
