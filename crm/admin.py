@@ -7,6 +7,7 @@
     на 500 позиций;
   - смена статуса заказ-наряда прямо из списка (list_editable).
 """
+import unfold
 
 from django.contrib import admin
 
@@ -14,7 +15,7 @@ from .models import Car, Client, WorkOrder
 
 
 @admin.register(Client)
-class ClientAdmin(admin.ModelAdmin):
+class ClientAdmin(unfold.admin.ModelAdmin):
     list_display = ("name", "phone", "created_at")
     search_fields = ("name", "phone", "notes")
     ordering = ("-created_at",)
@@ -36,7 +37,7 @@ class ClientAdmin(admin.ModelAdmin):
 
 
 @admin.register(Car)
-class CarAdmin(admin.ModelAdmin):
+class CarAdmin(unfold.admin.ModelAdmin):
     list_display = ("__str__", "client", "vin", "plate", "mileage")
     list_filter = ("brand",)
     # Поиск работает и по связанной модели (client__phone) —
@@ -63,7 +64,7 @@ class CarAdmin(admin.ModelAdmin):
 
 
 @admin.register(WorkOrder)
-class WorkOrderAdmin(admin.ModelAdmin):
+class WorkOrderAdmin(unfold.admin.ModelAdmin):
     list_display = ("id", "car", "status", "created_at", "issued_at")
     list_filter = ("status", "created_at")
     # list_editable требует, чтобы поле было в list_display,

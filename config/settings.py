@@ -1,5 +1,8 @@
 import os
 
+from django.templatetags.static import static
+from django.utils.translation import gettext_lazy as _
+
 from dotenv import load_dotenv
 
 from pathlib import Path
@@ -16,6 +19,7 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,7 +45,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'crm' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -51,6 +55,10 @@ TEMPLATES = [
             ],
         },
     },
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
@@ -94,6 +102,45 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- Настройка темы админки Unfold ---
+UNFOLD = {
+    # Названия и заголовки
+    "SITE_TITLE": "АвтоСервис | CRM",
+    "SITE_HEADER": "АвтоСервис",
+    "SITE_SUBHEADER": "Управление и статистика",
+    "SITE_URL": "/",
+
+    # Тема: "light", "dark" или "auto" (пользователь сам переключает)
+    "THEME": "light",
+
+    # admin css
+    "STYLES": [
+        lambda request: static("css/admin.css"),
+    ],
+    
+    # Основной цвет (пример: оранжевый, как на вашем сайте)
+    "COLORS": {
+        "primary": {
+            "50": "255 247 237",
+            "100": "255 237 213",
+            "200": "254 215 170",
+            "300": "253 186 116",
+            "400": "251 146 60",
+            "500": "249 115 22",   # Основной тон
+            "600": "234 88 12",
+            "700": "194 65 12",
+            "800": "154 52 18",
+            "900": "120 53 15",
+            "950": "67 20 7",
+        },
+    },
+    
+    # Скругление углов
+    "BORDER_RADIUS": "8px",
+    # Dashboard
+    "DASHBOARD_CALLBACK": "crm.views.dashboard_callback",
+}
 
 # --- VK ---
 VK_GROUP_TOKEN = os.getenv('VK_GROUP_TOKEN', '')
