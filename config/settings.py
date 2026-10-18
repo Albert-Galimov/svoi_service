@@ -23,7 +23,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'public.apps.PublicConfig',
-    'notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [
