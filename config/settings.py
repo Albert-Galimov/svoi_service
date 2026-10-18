@@ -9,7 +9,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'testing_secret_key')
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'testing_secret_key')
 
 DEBUG = True
 
@@ -93,3 +93,8 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- VK ---
+VK_GROUP_TOKEN = os.getenv('VK_GROUP_TOKEN', '')
+VK_GROUP_ID = os.getenv('VK_GROUP_ID', '')
+VK_OWNER_ID = int(os.getenv('VK_OWNER_ID', '0'))

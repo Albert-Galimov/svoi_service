@@ -3,8 +3,8 @@ import logging
 from django.shortcuts import redirect, render
 
 from core.constants import CONTACTS, SERVICES
-
 from core.forms import BookingForm
+from notifications.service import notify_about_booking
 
 logger = logging.getLogger(__name__)
 
@@ -20,17 +20,24 @@ def home(request):
 
 
 def booking_create(request):
-    """Приём заявки с формы. Только POST."""
-    # Если кто-то открыл URL руками (GET) — просто на главную.
     if request.method != "POST":
         return redirect("public:home")
 
     form = BookingForm(request.POST)
     if form.is_valid():
-        form.save()
+        booking = form.save()
+
+        try:
+            notify_about_booking(booking)
+        except Exception:
+            logger.exception(
+                "Неожиданная ошибка при отправке уведомления в ВК "
+                "о заявке id=%s",
+                booking.pk,
+            )
+
         return redirect("public:thanks")
 
-    # Если форма не прошла валидацию — возвращаем на главную с ошибками.
     context = {
         "services": SERVICES,
         "contacts": CONTACTS,
