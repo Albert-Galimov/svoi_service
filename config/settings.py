@@ -57,6 +57,10 @@ TEMPLATES = [
     },
 ]
 
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
+
 WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
