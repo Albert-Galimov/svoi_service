@@ -1,3 +1,5 @@
+import unfold
+
 from django.contrib import admin
 from django.contrib.auth.models import Group
 
@@ -6,7 +8,7 @@ from .models import Booking
 admin.site.unregister(Group)
 
 @admin.register(Booking)
-class BookingAdmin(admin.ModelAdmin):
+class BookingAdmin(unfold.admin.ModelAdmin):
     list_display = ("created_at", "name", "phone", "status")
     list_filter = ("status", "created_at")
     search_fields = ("name", "phone")

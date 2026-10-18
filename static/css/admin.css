@@ -1,0 +1,152 @@
+/* static/css/admin.css */
+
+/* =========================================
+   1. ВЕРХНЯЯ ШАПКА (Header)
+   ========================================= */
+header, #header {
+    background-color: #1a2b4a !important;
+    border-bottom: none !important;
+}
+
+header h1, 
+header span, 
+header a,
+#header h1,
+#header span {
+    color: #ffffff !important; 
+    font-weight: 700 !important;
+}
+
+/* =========================================
+   2. БОКОВОЕ МЕНЮ (Sidebar)
+   ========================================= */
+#nav-sidebar {
+    background-color: #f3f4f6 !important; /* Мягкий светло-серый фон */
+    border-right: 1px solid #e5e7eb !important;
+}
+
+#nav-sidebar > div,
+#nav-sidebar > nav {
+    background-color: transparent !important;
+}
+
+/* --- ЗАГОЛОВКИ ПРИЛОЖЕНИЙ (CRM, Сайт и т.д.) --- */
+/* Применяем стили к тегу <a> внутри <h2> */
+#nav-sidebar h2 a {
+    font-size: 0.65rem !important; /* Уменьшенный шрифт */
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4b5563 !important; /* Темно-серый текст */
+    background-color: #e5e7eb !important; /* Серый фон плашки */
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    display: block !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.5rem !important;
+    border-left: 3px solid #e87722 !important; /* Оранжевая полоска слева */
+    transition: background-color 0.15s ease !important;
+}
+
+#nav-sidebar h2 a:hover {
+    background-color: #d1d5db !important;
+    color: #111827 !important;
+}
+
+/* --- ССЫЛКИ ВНУТРИ ПРИЛОЖЕНИЙ --- */
+#nav-sidebar ul a {
+    color: #374151 !important; /* Темно-серый текст */
+    font-weight: 500 !important;
+    font-size: 0.85rem !important; 
+    border-radius: 6px;
+    margin: 2px 8px !important;
+    padding: 8px 12px;
+    transition: all 0.15s ease;
+}
+
+#nav-sidebar ul a:hover {
+    background-color: #e5e7eb !important;
+    color: #111827 !important;
+}
+
+/* Активный пункт меню (когда мы внутри раздела) */
+#nav-sidebar ul a.active {
+    background-color: #ffffff !important; 
+    color: #e87722 !important; 
+    font-weight: 700 !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Иконки в меню */
+#nav-sidebar svg {
+    color: #6b7280 !important; 
+}
+#nav-sidebar ul a:hover svg, 
+#nav-sidebar ul a.active svg {
+    color: #e87722 !important; 
+}
+
+/* Нижняя часть меню (профиль) */
+#nav-sidebar-footer {
+    background-color: #e5e7eb !important;
+    border-top: 1px solid #d1d5db !important;
+}
+#nav-sidebar-footer a, 
+#nav-sidebar-footer span {
+    color: #374151 !important;
+}
+
+/* =========================================
+   3. КАРТОЧКИ НА ДАШБОРДЕ
+   ========================================= */
+.custom-card {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-top: 4px solid #e87722 !important; 
+    border-radius: 12px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.custom-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.custom-card p {
+    color: #6b7280 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.75rem !important;
+}
+
+.custom-card h2, 
+.custom-card div.font-bold,
+.custom-card .text-2xl {
+    color: #111827 !important; 
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    margin-top: 0.5rem !important;
+}
+
+/* =========================================
+   4. ТАБЛИЦА
+   ========================================= */
+.bg-white.rounded-lg.shadow, 
+div[class*="shadow"] > table {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+/* --- Иконки на карточках --- */
+.custom-card .material-symbols-outlined {
+    font-size: 2rem !important;
+}
+
+/* Убираем стандартные отступы у заголовков внутри карточек,
+   так как мы задали их через Tailwind-классы в шаблоне */
+.custom-card h2,
+.custom-card p {
+    margin: 0 !important;
+}
