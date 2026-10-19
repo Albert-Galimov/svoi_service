@@ -11,6 +11,7 @@
 """
 
 from django.db import models
+from django.utils import timezone
 
 from core.fields import PhoneField
 
@@ -140,3 +141,68 @@ class WorkOrder(models.Model):
 
     def __str__(self) -> str:
         return f"№{self.pk or '—'} · {self.car} · {self.get_status_display()}"
+
+    def save(self, *args, **kwargs):
+        """Автоматически фиксируем дату, когда заказ готов.
+
+        Срабатывает при любом способе сохранения: из админки,
+        из скриптов, из shell. Если issued_at уже заполнен —
+        не перезаписываем (это история).
+        """
+        if self.status == self.Status.READY and self.issued_at is None:
+            self.issued_at = timezone.now()
+        super().save(*args, **kwargs)
+
+
+class WorkOrderItem(models.Model):
+    """Позиция в заказ-наряде: запчасть или работа.
+
+    Универсально: если добавляет запчасть — заполняет article,
+    система даёт ссылки на поставщиков. Если это просто работа
+    («замена масла») — article можно оставить пустым, name ввести руками.
+    """
+
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name="items",
+        verbose_name="Заказ-наряд",
+    )
+    article = models.CharField(
+        "Артикул",
+        max_length=50,
+        blank=True,
+        help_text="Оставьте пустым, если это работа (например, «Замена масла»).",
+    )
+    name = models.CharField(
+        "Название",
+        max_length=255,
+        help_text="Название запчасти или работы.",
+    )
+    quantity = models.PositiveIntegerField("Кол-во", default=1)
+    purchase_price = models.DecimalField(
+        "Закупочная цена",
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Видно только в CRM. На печать для клиента не попадает.",
+    )
+    client_price = models.DecimalField(
+        "Цена для клиента",
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
+
+    class Meta:
+        verbose_name = "Позиция заказа"
+        verbose_name_plural = "Позиции заказа"
+        ordering = ["id"]
+
+    def __str__(self) -> str:
+        return f"{self.name} (x{self.quantity})"
+
+    @property
+    def total_client_price(self):
+        """Сумма для клиента: цена × количество."""
+        return self.client_price * self.quantity

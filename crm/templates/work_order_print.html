@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Прайс-лист №{{ order.pk }} от {{ order.created_at|date:"d.m.Y" }}</title>
+    <style>
+        /* --- Базовые стили для экрана --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            color: #222;
+            margin: 0;
+            padding: 20px;
+            font-size: 14px;
+            background-color: #f5f5f5; /* Серый фон на экране */
+        }
+        .print-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #222;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .header h1 { margin: 0 0 10px 0; font-size: 24px; }
+        .header p { margin: 5px 0; color: #555; }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .info-block strong { display: block; color: #000; margin-bottom: 3px; }
+        .info-block span { color: #444; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        
+        .total-row {
+            font-weight: bold;
+            font-size: 16px;
+            background-color: #f8f9fa;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        /* --- Кнопка печати (скрывается при печати) --- */
+        .print-btn-wrapper {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .print-btn {
+            background-color: #e87722;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .print-btn:hover { background-color: #c76012; }
+
+        /* --- Стили ТОЛЬКО для печати (@media print) --- */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+                font-size: 12pt;
+            }
+            .print-container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            /* Скрываем кнопку печати на бумаге */
+            .print-btn-wrapper { display: none; }
+            
+            /* Убираем поля браузера, чтобы таблица влезла целиком */
+            @page { margin: 15mm; }
+            
+            /* Повторяем заголовок таблицы на новой странице, если позиций много */
+            thead { display: table-header-group; }
+            tr { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="print-container">
+    
+    <div class="header">
+        <h1>Прайс-лист на ремонт №{{ order.pk }}</h1>
+        <p><strong>{{ contacts.company_name }}</strong> | {{ contacts.phone_display }}</p>
+        <p>{{ contacts.address }}</p>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-block">
+            <strong>Клиент:</strong>
+            <span>{{ order.car.client.name }}</span><br>
+            <strong>Телефон:</strong>
+            <span>{{ order.car.client.phone }}</span>
+        </div>
+        <div class="info-block">
+            <strong>Автомобиль:</strong>
+            <span>{{ order.car.brand }} {{ order.car.model }}</span><br>
+            {% if order.car.plate %}
+                <strong>Госномер:</strong>
+                <span>{{ order.car.plate }}</span>
+            {% endif %}
+        </div>
+        <div class="info-block">
+            <strong>Дата:</strong>
+            <span>{{ order.created_at|date:"d.m.Y" }}</span>
+        </div>
+        <div class="info-block">
+            <strong>Статус:</strong>
+            <span>{{ order.get_status_display }}</span>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="text-center" style="width: 40px;">№</th>
+                <th>Наименование (Работа / Запчасть)</th>
+                <th class="text-center" style="width: 60px;">Кол-во</th>
+                <th class="text-right" style="width: 100px;">Цена, ₽</th>
+                <th class="text-right" style="width: 100px;">Сумма, ₽</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td>
+                    {{ item.name }}
+                    {% if item.article %}
+                        <br><small style="color: #777; font-size: 0.85em;">Артикул: {{ item.article }}</small>
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <!-- Выводим только цену для клиента, закупочную скрываем -->
+                <td class="text-right">{{ item.client_price|floatformat:2 }}</td>
+                <td class="text-right">{{ item.total_client_price|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center" style="padding: 20px;">В заказе пока нет позиций.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="4" class="text-right">Итого к оплате:</td>
+                <td class="text-right">{{ total|floatformat:2 }} ₽</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    {% if order.description %}
+        <div style="margin-bottom: 30px;">
+            <strong>Причина обращения:</strong><br>
+            <p style="margin-top: 5px; color: #444;">{{ order.description|linebreaksbr }}</p>
+        </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Точная стоимость может быть скорректирована после осмотра автомобиля и согласования с клиентом.</p>
+        <p>Запчасти и расходные материалы могут быть предоставлены клиентом или приобретены сервисом.</p>
+    </div>
+
+    <div class="print-btn-wrapper">
+        <button class="print-btn" onclick="window.print()">🖨️ Распечатать прайс</button>
+    </div>
+
+</div>
+
+</body>
+</html>
