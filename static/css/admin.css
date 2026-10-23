@@ -180,3 +180,9 @@ div[class*="shadow"] > table {
     background-color: #c76012;
     color: #ffffff !important;
 }
+
+/* Скрываем дублирующиеся заголовки в инлайнах машин и заказов */
+#cars-group .original > tr:first-child,
+#work_orders-group .original > tr:first-child {
+    display: none !important;
+}

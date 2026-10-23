@@ -1,0 +1,25 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block field_sets %}
+    {% for fieldset in adminform %}
+        {% if forloop.first %}
+            {# 1. Выводим самый первый блок (Клиент) #}
+            {% include "admin/includes/fieldset.html" %}
+
+            {# 2. Сразу после него выводим инлайны (Автомобили) #}
+            {% if inline_admin_formsets %}
+                {% for inline_admin_formset in inline_admin_formsets %}
+                    {% include inline_admin_formset.opts.template %}
+                {% endfor %}
+            {% endif %}
+        {% else %}
+            {# 3. Выводим остальные блоки (Дополнительно, Служебное) #}
+            {% include "admin/includes/fieldset.html" %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}
+
+{% block inline_field_sets %}
+    {# Очищаем стандартный блок вывода инлайнов — мы их вывели выше #}
+{% endblock %}
