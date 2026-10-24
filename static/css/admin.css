@@ -150,3 +150,39 @@ div[class*="shadow"] > table {
 .custom-card p {
     margin: 0 !important;
 }
+
+/* --- Ссылки на поставщиков запчастей (в админке) --- */
+
+.part-supplier-links {
+    margin-top: 6px;
+}
+
+.part-supplier-links__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.part-link {
+    display: inline-block;
+    background-color: #e87722;
+    color: #ffffff !important;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-decoration: none !important;
+    transition: background-color 0.15s ease;
+}
+
+.part-link:hover {
+    background-color: #c76012;
+    color: #ffffff !important;
+}
+
+/* Скрываем дублирующиеся заголовки в инлайнах машин и заказов */
+#cars-group .original > tr:first-child,
+#work_orders-group .original > tr:first-child {
+    display: none !important;
+}

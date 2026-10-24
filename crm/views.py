@@ -1,8 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_GET
+from django.http import JsonResponse
 
-# crm/views.py
 from public.models import Booking
 from .models import Client, WorkOrder
+from core.constants import PART_SUPPLIER_URLS, CONTACTS
+
 
 def dashboard_callback(request, context):
     """Собирает статистику для главной страницы админки."""
@@ -10,8 +14,54 @@ def dashboard_callback(request, context):
         "total_clients": Client.objects.count(),
         "new_bookings": Booking.objects.filter(status=Booking.Status.NEW).count(),
         "active_orders": WorkOrder.objects.filter(
-            status__in=[WorkOrder.Status.IN_PROGRESS, WorkOrder.Status.WAITING_PARTS]
+            status__in=[WorkOrder.Status.WAITING_INSTALL, WorkOrder.Status.WAITING_PARTS]
         ).count(),
         "recent_bookings": Booking.objects.order_by("-created_at")[:5],
     })
     return context
+
+
+@login_required
+@require_GET
+def part_lookup_api(request):
+    """Принимает ?article=XXX, возвращает список ссылок на поставщиков.
+
+    Логика простая: артикул нормализуем (trim + upper) и подставляем
+    в шаблоны URL из PART_SUPPLIER_URLS.
+    """
+    article = request.GET.get("article", "").strip().upper()
+
+    if not article:
+        return JsonResponse({"article": "", "suppliers": []})
+
+    suppliers = [
+        {
+            "name": supplier_name,
+            "url": url_template.format(article=article),
+        }
+        for supplier_name, url_template in PART_SUPPLIER_URLS.items()
+    ]
+
+    return JsonResponse({"article": article, "suppliers": suppliers})
+
+
+@login_required
+def work_order_print(request, pk):
+    """Страница печати прайса для клиента.
+
+    Показываем только client_price и итоговую сумму.
+    purchase_price (закупочная цена) на печать НЕ попадает.
+    """
+    order = get_object_or_404(WorkOrder, pk=pk)
+    items = order.items.all()
+    
+    # Считаем итог для клиента
+    total = sum(item.total_client_price for item in items)
+
+    context = {
+        "order": order,
+        "items": items,
+        "total": total,
+        "contacts": CONTACTS,
+    }
+    return render(request, "work_order_print.html", context)

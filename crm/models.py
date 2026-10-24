@@ -11,8 +11,10 @@
 """
 
 from django.db import models
+from django.utils import timezone
 
 from core.fields import PhoneField
+from core.validators import validate_license_plate, validate_vin
 
 
 class Client(models.Model):
@@ -23,7 +25,7 @@ class Client(models.Model):
     дубль (unique=True), и это правильно.
     """
 
-    name = models.CharField("Имя", max_length=100)
+    name = models.CharField("ФИО", max_length=100)
     phone = PhoneField("Телефон", unique=True)
     notes = models.TextField(
         "Заметки",
@@ -61,16 +63,22 @@ class Car(models.Model):
     brand = models.CharField("Марка", max_length=50)
     model = models.CharField("Модель", max_length=50)
     plate = models.CharField(
-        "Госномер", max_length=20, blank=True, db_index=True
+        "Госномер", max_length=20, db_index=True,
+        validators=[validate_license_plate]
     )
     vin = models.CharField(
-        "VIN", max_length=17, blank=True, db_index=True
+        "VIN", max_length=17, db_index=True,
+        validators=[validate_vin]
     )
     mileage = models.PositiveIntegerField(
-        "Пробег, км", null=True, blank=True,
-        help_text="Последнее известное значение. Уточняется при визите.",
+        "Пробег, км",
+        help_text="Последнее известное значение. Уточняется при визите."
     )
-    notes = models.TextField("Заметки", blank=True)
+    notes = models.TextField(
+        "Заметка",
+        blank=True,
+        help_text="Видно только в CRM."
+    )
     created_at = models.DateTimeField("Создан", auto_now_add=True)
     updated_at = models.DateTimeField("Обновлён", auto_now=True)
 
@@ -94,9 +102,9 @@ class WorkOrder(models.Model):
     """
 
     class Status(models.TextChoices):
-        CREATED = "created", "Создан"
-        IN_PROGRESS = "in_progress", "В работе"
+        CREATED = "created", "Создан, ожидает решения"
         WAITING_PARTS = "waiting_parts", "Ожидание запчастей"
+        WAITING_INSTALL = "waiting_install", "Ждёт установки"
         READY = "ready", "Готов"
         CANCELED = "canceled", "Отменён"
 
@@ -118,7 +126,6 @@ class WorkOrder(models.Model):
     )
     notes = models.TextField(
         "Заметки мастера",
-        blank=True,
         help_text="Наблюдения по ходу работ. Видно только в CRM.",
     )
     created_at = models.DateTimeField("Создан", auto_now_add=True)
@@ -140,3 +147,93 @@ class WorkOrder(models.Model):
 
     def __str__(self) -> str:
         return f"№{self.pk or '—'} · {self.car} · {self.get_status_display()}"
+
+    def save(self, *args, **kwargs):
+        """Автоматически фиксируем дату, когда заказ готов.
+
+        Срабатывает при любом способе сохранения: из админки,
+        из скриптов, из shell. Если issued_at уже заполнен —
+        не перезаписываем (это история).
+        """
+        if self.status == self.Status.READY and self.issued_at is None:
+            self.issued_at = timezone.now()
+        super().save(*args, **kwargs)
+
+
+class WorkOrderItem(models.Model):
+    """Позиция в заказ-наряде: запчасть или работа.
+
+    Универсально: если добавляет запчасть — заполняет article,
+    система даёт ссылки на поставщиков. Если это просто работа
+    («замена масла») — article можно оставить пустым, name ввести руками.
+    """
+
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name="items",
+        verbose_name="Заказ-наряд",
+    )
+    article = models.CharField(
+        "Артикул",
+        max_length=50,
+        blank=True,
+        help_text="Оставьте пустым, если это работа (например, «Замена масла»).",
+    )
+    name = models.CharField(
+        "Название",
+        max_length=255,
+        help_text="Название запчасти или работы.",
+    )
+    quantity = models.PositiveIntegerField("Кол-во", default=1)
+    purchase_price = models.DecimalField(
+        "Закупочная цена",
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Видно только в CRM. На печать для клиента не попадает.",
+    )
+    client_price = models.DecimalField(
+        "Цена для клиента",
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
+
+    class Meta:
+        verbose_name = "Позиция заказа"
+        verbose_name_plural = "Позиции заказа"
+        ordering = ["id"]
+
+    def __str__(self) -> str:
+        return f"{self.name} (x{self.quantity})"
+
+    @property
+    def total_client_price(self):
+        """Сумма для клиента: цена × количество."""
+        return self.client_price * self.quantity
+
+
+class WarehouseItem(models.Model):
+    """Склад автосервиса."""
+    article = models.CharField("Артикул", max_length=50)
+    name = models.CharField("Наименование", max_length=255)
+    purchase_price = models.DecimalField(
+        "Закупочная цена", max_digits=10, decimal_places=2
+    )
+    quantity = models.PositiveIntegerField("Количество", default=1)
+    note = models.TextField(
+        "Заметка", blank=True, 
+        help_text="Видно только в CRM."
+    )
+    created_at = models.DateTimeField("Добавлен", auto_now_add=True)
+    updated_at = models.DateTimeField("Обновлён", auto_now=True)
+
+    class Meta:
+        verbose_name = "Запчасть на складе"
+        verbose_name_plural = "Склад"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.article} — {self.name} ({self.quantity} шт.)"
+    
