@@ -102,9 +102,9 @@ class WorkOrder(models.Model):
     """
 
     class Status(models.TextChoices):
-        CREATED = "created", "Создан"
-        IN_PROGRESS = "in_progress", "В работе"
+        CREATED = "created", "Создан, ожидает решения"
         WAITING_PARTS = "waiting_parts", "Ожидание запчастей"
+        WAITING_INSTALL = "waiting_install", "Ждёт установки"
         READY = "ready", "Готов"
         CANCELED = "canceled", "Отменён"
 
@@ -126,7 +126,6 @@ class WorkOrder(models.Model):
     )
     notes = models.TextField(
         "Заметки мастера",
-        blank=True,
         help_text="Наблюдения по ходу работ. Видно только в CRM.",
     )
     created_at = models.DateTimeField("Создан", auto_now_add=True)

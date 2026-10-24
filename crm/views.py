@@ -14,7 +14,7 @@ def dashboard_callback(request, context):
         "total_clients": Client.objects.count(),
         "new_bookings": Booking.objects.filter(status=Booking.Status.NEW).count(),
         "active_orders": WorkOrder.objects.filter(
-            status__in=[WorkOrder.Status.IN_PROGRESS, WorkOrder.Status.WAITING_PARTS]
+            status__in=[WorkOrder.Status.WAITING_INSTALL, WorkOrder.Status.WAITING_PARTS]
         ).count(),
         "recent_bookings": Booking.objects.order_by("-created_at")[:5],
     })

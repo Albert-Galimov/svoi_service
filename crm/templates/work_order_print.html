@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Прайс-лист №{{ order.pk }} от {{ order.created_at|date:"d.m.Y" }}</title>
+    <title>Прайс-лист {{ order.car.brand }} {{ order.car.model }} от {{ order.created_at|date:"d.m.Y" }}</title>
     <style>
         /* --- Базовые стили для экрана --- */
         body {
@@ -118,7 +118,7 @@
 <div class="print-container">
     
     <div class="header">
-        <h1>Прайс-лист на ремонт №{{ order.pk }}</h1>
+        <h1>Прайс-лист на ремонт</h1>
         <p><strong>{{ contacts.company_name }}</strong> | {{ contacts.phone_display }}</p>
         <p>{{ contacts.address }}</p>
     </div>
@@ -164,9 +164,6 @@
                 <td class="text-center">{{ forloop.counter }}</td>
                 <td>
                     {{ item.name }}
-                    {% if item.article %}
-                        <br><small style="color: #777; font-size: 0.85em;">Артикул: {{ item.article }}</small>
-                    {% endif %}
                 </td>
                 <td class="text-center">{{ item.quantity }}</td>
                 <!-- Выводим только цену для клиента, закупочную скрываем -->
