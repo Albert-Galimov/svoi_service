@@ -123,7 +123,7 @@
         <p>{{ contacts.address }}</p>
     </div>
 
-    <div class="info-grid">
+        <div class="info-grid">
         <div class="info-block">
             <strong>Клиент:</strong>
             <span>{{ order.car.client.name }}</span><br>
@@ -139,12 +139,16 @@
             {% endif %}
         </div>
         <div class="info-block">
-            <strong>Дата:</strong>
-            <span>{{ order.created_at|date:"d.m.Y" }}</span>
+            <strong>Пробег при приемке:</strong>
+            <span>{{ order.mileage }} км</span><br>
+            <strong>Мастер:</strong>
+            <span>{{ order.master }}</span>
         </div>
         <div class="info-block">
-            <strong>Статус:</strong>
-            <span>{{ order.get_status_display }}</span>
+            <strong>Дата:</strong>
+            <span>{{ order.created_at|date:"d.m.Y" }}</span><br>
+            <strong>Оплата:</strong>
+            <span>{{ order.get_payment_method_display }}</span>
         </div>
     </div>
 
@@ -188,6 +192,13 @@
         <div style="margin-bottom: 30px;">
             <strong>Причина обращения:</strong><br>
             <p style="margin-top: 5px; color: #444;">{{ order.description|linebreaksbr }}</p>
+        </div>
+    {% endif %}
+
+    {% if order.notes %}
+        <div style="margin-bottom: 30px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #e87722; border-radius: 4px;">
+            <strong>Рекомендации мастера:</strong><br>
+            <p style="margin-top: 5px; color: #444;">{{ order.notes|linebreaksbr }}</p>
         </div>
     {% endif %}
 

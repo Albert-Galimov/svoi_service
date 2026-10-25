@@ -67,3 +67,11 @@ CONTACTS = {
     "hours_saturday": "Сб: 10:00–17:00",
     "hours_sunday": "Вс: выходной",
 }
+
+# --- Способы оплаты ---
+PAYMENT_METHODS = [
+    ("cash", "Наличные"),
+    ("card", "Карта"),
+    ("transfer", "Перевод"),
+    ("none", "Не выбрано"),
+]
