@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 # Импортируем все модели, включая новую WarehouseItem
-from .models import Car, Client, WorkOrder, WorkOrderItem, WarehouseItem
+from .models import Car, Master, Client, WorkOrder, WorkOrderItem, WarehouseItem
 
 
 # ==========================================
@@ -184,12 +184,17 @@ class CarAdmin(unfold.admin.ModelAdmin):
     )
 
 
+@admin.register(Master)
+class MasterAdmin(unfold.admin.ModelAdmin):
+    list_display = ("name", "is_active")
+    ordering = ("name",)
+
+
 @admin.register(WorkOrder)
 class WorkOrderAdmin(unfold.admin.ModelAdmin):
-    # Используем order_info для красивой кликабельной ссылки
-    list_display = ("car", "status", "created_at", "issued_at", "print_button")
-    list_display_links = ("order_info", "car", "created_at", "issued_at")
-    list_filter = ("status", "created_at")
+    list_display = ("car", "master", "status", "created_at", "issued_at", "print_button")
+    list_display_links = ("car", "master", "created_at", "issued_at")
+    list_filter = ("status", "master", "created_at")
     list_editable = ("status",)
     search_fields = (
         "car__plate", "car__vin", "car__brand", "car__model",
@@ -202,9 +207,10 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
     inlines = [WorkOrderItemInline]
 
     fieldsets = (
-        ("Автомобиль", {"fields": ("car",)}),
+        ("Автомобиль", {"fields": ("car", "mileage")}),
+        ("Исполнение", {"fields": ("master", "payment_method")}),
         ("Работа", {"fields": ("status", "description", "notes")}),
-        ("Сроки", {"fields": ("issued_at", "created_at", "updated_at")}),
+        ("Сроки", {"fields": ("issued_at", "created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
     def print_button(self, obj):

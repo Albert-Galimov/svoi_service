@@ -12,9 +12,11 @@
 
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 from core.fields import PhoneField
 from core.validators import validate_license_plate, validate_vin
+from core.constants import PAYMENT_METHODS
 
 
 class Client(models.Model):
@@ -42,6 +44,26 @@ class Client(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.phone})"
+
+
+class Master(models.Model):
+    """Мастер (сотрудник), выполняющий работы."""
+
+    name = models.CharField("ФИО", max_length=150)
+    is_active = models.BooleanField(
+        "Работает", default=True,
+        help_text="Снимите галочку, если мастер уволился (скроется из выбора)."
+    )
+    notes = models.TextField("Заметки", blank=True)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Мастер"
+        verbose_name_plural = "Мастера"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Car(models.Model):
@@ -95,11 +117,7 @@ class Car(models.Model):
 
 
 class WorkOrder(models.Model):
-    """Заказ-наряд — работа по конкретной машине.
-
-    Статусы описывают жизненный цикл: от приёмки до выдачи.
-    Позиции (запчасти и работы) появятся на следующем этапе.
-    """
+    """Заказ-наряд — работа по конкретной машине."""
 
     class Status(models.TextChoices):
         CREATED = "created", "Создан, ожидает решения"
@@ -114,26 +132,42 @@ class WorkOrder(models.Model):
         related_name="work_orders",
         verbose_name="Автомобиль",
     )
+    mileage = models.PositiveIntegerField(
+        "Пробег при приемке, км",
+        help_text="Не может быть меньше текущего пробега автомобиля."
+    )
+    master = models.ForeignKey(
+        Master,
+        on_delete=models.PROTECT,  # Нельзя удалить мастера, если на него есть заказы
+        related_name="work_orders",
+        verbose_name="Мастер",
+    )
     status = models.CharField(
         "Статус",
-        max_length=20,
+        max_length=30,
         choices=Status.choices,
         default=Status.CREATED,
     )
+    payment_method = models.CharField(
+        "Способ оплаты",
+        max_length=20,
+        choices=PAYMENT_METHODS,
+        default="none"
+    )
     description = models.TextField(
         "Что нужно сделать",
-        help_text="Со слов клиента: «стучит спереди», «замена масла» и т. п.",
+        help_text="Со слов клиента: «стучит спереди», «замена масла» и т. п. Видно при печати.",
     )
     notes = models.TextField(
         "Заметки мастера",
-        help_text="Наблюдения по ходу работ. Видно только в CRM.",
+        help_text="Рекомендации. Видно при печати.",
     )
     created_at = models.DateTimeField("Создан", auto_now_add=True)
     updated_at = models.DateTimeField("Обновлён", auto_now=True)
     issued_at = models.DateTimeField(
         "Выдан",
         null=True, blank=True,
-        help_text="Заполняется, когда машину отдали клиенту.",
+        help_text="Когда машину отдали клиенту. Заполняется автоматически при установке статуса.",
     )
 
     class Meta:
@@ -145,19 +179,26 @@ class WorkOrder(models.Model):
             models.Index(fields=["status", "-created_at"]),
         ]
 
-    def __str__(self) -> str:
-        return f"№{self.pk or '—'} · {self.car} · {self.get_status_display()}"
+    def clean(self):
+        """Валидация пробега: он не может быть меньше предыдущего."""
+        super().clean()
+        if self.mileage and self.car_id:
+            if self.mileage < self.car.mileage:
+                raise ValidationError({
+                    'mileage': f"Пробег не может быть меньше текущего пробега автомобиля ({self.car.mileage} км)."
+                })
 
     def save(self, *args, **kwargs):
-        """Автоматически фиксируем дату, когда заказ готов.
-
-        Срабатывает при любом способе сохранения: из админки,
-        из скриптов, из shell. Если issued_at уже заполнен —
-        не перезаписываем (это история).
-        """
+        # Автозаполнение даты "Выдан" при статусе "Готов"
         if self.status == self.Status.READY and self.issued_at is None:
             self.issued_at = timezone.now()
+            
         super().save(*args, **kwargs)
+        
+        # Обновляем пробег самой машины, если в заказе указали больше
+        if self.mileage > self.car.mileage:
+            self.car.mileage = self.mileage
+            self.car.save(update_fields=['mileage'])
 
 
 class WorkOrderItem(models.Model):
@@ -216,6 +257,7 @@ class WorkOrderItem(models.Model):
 
 class WarehouseItem(models.Model):
     """Склад автосервиса."""
+
     article = models.CharField("Артикул", max_length=50)
     name = models.CharField("Наименование", max_length=255)
     purchase_price = models.DecimalField(
@@ -236,4 +278,3 @@ class WarehouseItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.article} — {self.name} ({self.quantity} шт.)"
-    
