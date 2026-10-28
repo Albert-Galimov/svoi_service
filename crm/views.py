@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET
 from django.http import JsonResponse
+from django.template.loader import render_to_string
 
 from public.models import Booking
 from .models import Client, WorkOrder
@@ -65,3 +66,32 @@ def work_order_print(request, pk):
         "contacts": CONTACTS,
     }
     return render(request, "work_order_print.html", context)
+
+
+@login_required
+@require_GET
+def car_notes_api(request):
+    """Возвращает HTML-блок с прошлыми заметками мастера для выбранного авто."""
+    car_id = request.GET.get("car_id")
+    exclude_id = request.GET.get("exclude_id")
+
+    if not car_id:
+        return JsonResponse({"html": ""})
+
+    # Ищем заказы этой машины, где есть заметки
+    qs = WorkOrder.objects.filter(car_id=car_id).exclude(notes="").exclude(notes__isnull=True)
+    
+    # Если редактируем существующий заказ, исключаем его из списка "прошлых"
+    if exclude_id:
+        qs = qs.exclude(pk=exclude_id)
+
+    # Берем 5 последних
+    previous_notes = qs.order_by("-created_at")[:5]
+
+    # Рендерим HTML через отдельный партиал-шаблон
+    html = render_to_string(
+        "admin/crm/workorder/previous_notes_block.html", 
+        {"previous_notes": previous_notes}
+    )
+
+    return JsonResponse({"html": html})
