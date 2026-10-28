@@ -1828,7 +1828,7 @@ msgstr ""
 #: .\venv\Lib\site-packages\unfold\templates\admin\actions.html:24
 #: .\venv\Lib\site-packages\unfold\templates\admin\dataset_actions.html:49
 msgid "Run"
-msgstr ""
+msgstr "Выполнить"
 
 #: .\venv\Lib\site-packages\unfold\templates\admin\actions.html:44
 #: .\venv\Lib\site-packages\unfold\templates\admin\dataset_actions.html:17

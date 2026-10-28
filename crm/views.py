@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 
 from public.models import Booking
 from .models import Client, WorkOrder, WarehouseItem
-from core.constants import PART_SUPPLIER_URLS, CONTACTS
+from core.constants import PART_SUPPLIER_URLS, CONTACTS, SERVICES
 
 
 def dashboard_callback(request, context):
@@ -55,21 +55,38 @@ def part_lookup_api(request):
 
 
 @login_required
-def work_order_print(request, pk):
-    """Страница печати прайса для клиента.
+@require_GET
+def service_lookup_api(request):
+    """Возвращает название и цену выбранной услуги из констант."""
+    service_code = request.GET.get("code")
+    if not service_code:
+        return JsonResponse({"name": "", "price": 0})
 
-    Показываем только client_price и итоговую сумму.
-    purchase_price (закупочная цена) на печать НЕ попадает.
-    """
+    service_data = SERVICES.get(service_code)
+    if service_data:
+        return JsonResponse({
+            "name": service_data["name"],
+            "price": str(service_data["price"])
+        })
+    return JsonResponse({"name": "", "price": 0})
+
+
+@login_required
+def work_order_print(request, pk):
+    """Страница печати прайса для клиента."""
     order = get_object_or_404(WorkOrder, pk=pk)
-    items = order.items.all()
     
-    # Считаем итог для клиента
-    total = sum(item.total_client_price for item in items)
+    # Разделяем на группы
+    parts_and_consumables = order.items.filter(category='part')
+    works = order.items.filter(category='work')
+    
+    # Считаем общий итог (по всем позициям)
+    total = sum(item.total_client_price for item in order.items.all())
 
     context = {
         "order": order,
-        "items": items,
+        "parts_and_consumables": parts_and_consumables,
+        "works": works,
         "total": total,
         "contacts": CONTACTS,
     }

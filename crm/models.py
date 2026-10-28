@@ -16,7 +16,10 @@ from django.core.exceptions import ValidationError
 
 from core.fields import PhoneField
 from core.validators import validate_license_plate, validate_vin
-from core.constants import PAYMENT_METHODS
+from core.constants import PAYMENT_METHODS, SERVICES
+
+# Формируем список вариантов для поля service
+SERVICE_CHOICES = [(code, data["name"]) for code, data in SERVICES.items()]
 
 
 class Client(models.Model):
@@ -202,18 +205,30 @@ class WorkOrder(models.Model):
 
 
 class WorkOrderItem(models.Model):
-    """Позиция в заказ-наряде: запчасть или работа.
+    """Позиция в заказ-наряде: запчасть или работа."""
 
-    Универсально: если добавляет запчасть — заполняет article,
-    система даёт ссылки на поставщиков. Если это просто работа
-    («замена масла») — article можно оставить пустым, name ввести руками.
-    """
+    class Category(models.TextChoices):
+        PART = "part", "Запчасть / Расходник"
+        WORK = "work", "Работа"
 
     work_order = models.ForeignKey(
         WorkOrder,
         on_delete=models.CASCADE,
         related_name="items",
         verbose_name="Заказ-наряд",
+    )
+    category = models.CharField(
+        "Категория",
+        max_length=20,
+        choices=Category.choices,
+        default=Category.PART
+    )
+    service = models.CharField(
+        "Услуга из списка",
+        max_length=50,
+        blank=True,
+        choices=SERVICE_CHOICES,
+        help_text="Выберите, чтобы подставить название и цену."
     )
     article = models.CharField(
         "Артикул",

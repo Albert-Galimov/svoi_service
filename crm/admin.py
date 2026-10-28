@@ -127,15 +127,58 @@ class WorkOrderInline(unfold.admin.TabularInline):
         return self._get_link(obj, desc)
 
 
-class WorkOrderItemInline(unfold.admin.TabularInline):
-    """Позиции (запчасти и работы) внутри заказ-наряда."""
+# --- БАЗОВЫЙ ИНЛАЙН ДЛЯ ПОЗИЦИЙ ---
+class BaseWorkOrderItemInline(unfold.admin.TabularInline):
     model = WorkOrderItem
     extra = 1
-    fields = ("article", "name", "quantity", "purchase_price", "client_price")
-    ordering = ("id",)
+    category_value = None
 
+    def get_queryset(self, request):
+        """Показываем только позиции нужной категории."""
+        qs = super().get_queryset(request)
+        if self.category_value:
+            return qs.filter(category=self.category_value)
+        return qs
+
+    def get_formset(self, request, obj=None, **kwargs):
+        """Возвращаем кастомный формсет, который принудительно ставит категорию."""
+        BaseFormSet = super().get_formset(request, obj, **kwargs)
+        category = self.category_value  # Запоминаем в замыкании для этого инлайна
+
+        class CategorizedFormSet(BaseFormSet):
+            def save_new(self, form, commit=True):
+                instance = super().save_new(form, commit=False)
+                instance.category = category
+                if commit:
+                    instance.save()
+                    form.save_m2m()
+                return instance
+
+            def save_existing(self, form, instance, commit=True):
+                instance.category = category
+                return super().save_existing(form, instance, commit)
+
+        return CategorizedFormSet
+
+
+# --- ИНЛАЙН ДЛЯ ЗАПЧАСТЕЙ И РАСХОДНИКОВ ---
+class WorkOrderPartInline(BaseWorkOrderItemInline):
+    category_value = WorkOrderItem.Category.PART
+    fields = ("article", "name", "quantity", "purchase_price", "client_price")
+    verbose_name = "Запчасть"
+    verbose_name_plural = "Запчасти и расходники"
     class Media:
         js = ("js/admin_parts.js",)
+
+
+# --- ИНЛАЙН ДЛЯ УСЛУГ ---
+class WorkOrderWorkInline(BaseWorkOrderItemInline):
+    category_value = WorkOrderItem.Category.WORK
+    fields = ("service", "name", "quantity", "client_price") # Без закупочной цены
+    verbose_name = "Услуга"
+    verbose_name_plural = "Работы и услуги"
+    class Media:
+        js = ("js/admin_services.js",)
 
 
 # ==========================================
@@ -204,7 +247,7 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
     autocomplete_fields = ("car",)
     readonly_fields = ("created_at", "updated_at")
     date_hierarchy = "created_at"
-    inlines = [WorkOrderItemInline]
+    inlines = [WorkOrderPartInline, WorkOrderWorkInline]
     change_form_template = "admin/crm/workorder/change_form.html"
 
     fieldsets = (
