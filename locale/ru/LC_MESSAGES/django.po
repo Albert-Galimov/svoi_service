@@ -495,7 +495,7 @@ msgstr ""
 
 #: .\venv\Lib\site-packages\django\forms\fields.py:94
 msgid "This field is required."
-msgstr ""
+msgstr "Это поле обязательно."
 
 #: .\venv\Lib\site-packages\django\forms\fields.py:314
 msgid "Enter a whole number."
@@ -1807,7 +1807,7 @@ msgstr ""
 #: .\venv\Lib\site-packages\unfold\mixins\formfield_model_admin.py:56
 #: .\venv\Lib\site-packages\unfold\mixins\formfield_model_admin.py:75
 msgid "Select value"
-msgstr ""
+msgstr "Выберите значение..."
 
 #: .\venv\Lib\site-packages\unfold\mixins\formfield_model_admin.py:145
 #, python-brace-format

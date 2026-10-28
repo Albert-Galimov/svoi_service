@@ -205,6 +205,7 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     date_hierarchy = "created_at"
     inlines = [WorkOrderItemInline]
+    change_form_template = "admin/crm/workorder/change_form.html"
 
     fieldsets = (
         ("Автомобиль", {"fields": ("car", "mileage")}),
@@ -212,6 +213,10 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
         ("Работа", {"fields": ("status", "description", "notes")}),
         ("Сроки", {"fields": ("issued_at", "created_at", "updated_at"), "classes": ("collapse",)}),
     )
+
+    # Подключаем наш JS
+    class Media:
+        js = ("js/admin_car_notes.js",)
 
     def print_button(self, obj):
         """Генерирует ссылку-кнопку для перехода на страницу печати."""
