@@ -152,31 +152,61 @@
         </div>
     </div>
 
+    <!-- Таблица 1: Запчасти и расходники -->
+    <h3 style="margin-top: 20px; margin-bottom: 10px; font-size: 16px;">Запчасти и расходные материалы</h3>
     <table>
         <thead>
             <tr>
                 <th class="text-center" style="width: 40px;">№</th>
-                <th>Наименование (Работа / Запчасть)</th>
+                <th>Наименование</th>
                 <th class="text-center" style="width: 60px;">Кол-во</th>
                 <th class="text-right" style="width: 100px;">Цена, ₽</th>
                 <th class="text-right" style="width: 100px;">Сумма, ₽</th>
             </tr>
         </thead>
         <tbody>
-            {% for item in items %}
+            {% for item in parts_and_consumables %}
             <tr>
                 <td class="text-center">{{ forloop.counter }}</td>
                 <td>
                     {{ item.name }}
                 </td>
                 <td class="text-center">{{ item.quantity }}</td>
-                <!-- Выводим только цену для клиента, закупочную скрываем -->
                 <td class="text-right">{{ item.client_price|floatformat:2 }}</td>
                 <td class="text-right">{{ item.total_client_price|floatformat:2 }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" class="text-center" style="padding: 20px;">В заказе пока нет позиций.</td>
+                <td colspan="5" class="text-center" style="padding: 10px; color: #888;">Запчасти и расходники не добавлены.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Таблица 2: Работы и услуги -->
+    <h3 style="margin-top: 30px; margin-bottom: 10px; font-size: 16px;">Работы и услуги</h3>
+    <table>
+        <thead>
+            <tr>
+                <th class="text-center" style="width: 40px;">№</th>
+                <th>Наименование услуги</th>
+                <th class="text-center" style="width: 60px;">Кол-во</th>
+                <th class="text-right" style="width: 100px;">Цена, ₽</th>
+                <th class="text-right" style="width: 100px;">Сумма, ₽</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in works %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td>{{ item.name }}</td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-right">{{ item.client_price|floatformat:2 }}</td>
+                <td class="text-right">{{ item.total_client_price|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center" style="padding: 10px; color: #888;">Работы и услуги не добавлены.</td>
             </tr>
             {% endfor %}
         </tbody>
