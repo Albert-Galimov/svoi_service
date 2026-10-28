@@ -8,12 +8,9 @@ header, #header {
     border-bottom: none !important;
 }
 
-header h1, 
-header span, 
-header a,
-#header h1,
-#header span {
-    color: #ffffff !important; 
+header h1, header span, header a,
+#header h1, #header span {
+    color: #ffffff !important;
     font-weight: 700 !important;
 }
 
@@ -21,7 +18,7 @@ header a,
    2. БОКОВОЕ МЕНЮ (Sidebar)
    ========================================= */
 #nav-sidebar {
-    background-color: #f3f4f6 !important; /* Мягкий светло-серый фон */
+    background-color: #f3f4f6 !important;
     border-right: 1px solid #e5e7eb !important;
 }
 
@@ -30,21 +27,19 @@ header a,
     background-color: transparent !important;
 }
 
-/* --- ЗАГОЛОВКИ ПРИЛОЖЕНИЙ (CRM, Сайт и т.д.) --- */
-/* Применяем стили к тегу <a> внутри <h2> */
 #nav-sidebar h2 a {
-    font-size: 0.65rem !important; /* Уменьшенный шрифт */
+    font-size: 0.65rem !important;
     font-weight: 700 !important;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #4b5563 !important; /* Темно-серый текст */
-    background-color: #e5e7eb !important; /* Серый фон плашки */
+    color: #4b5563 !important;
+    background-color: #e5e7eb !important;
     padding: 6px 10px !important;
     border-radius: 6px !important;
     display: block !important;
     margin-top: 1.5rem !important;
     margin-bottom: 0.5rem !important;
-    border-left: 3px solid #e87722 !important; /* Оранжевая полоска слева */
+    border-left: 3px solid #e87722 !important;
     transition: background-color 0.15s ease !important;
 }
 
@@ -53,11 +48,10 @@ header a,
     color: #111827 !important;
 }
 
-/* --- ССЫЛКИ ВНУТРИ ПРИЛОЖЕНИЙ --- */
 #nav-sidebar ul a {
-    color: #374151 !important; /* Темно-серый текст */
+    color: #374151 !important;
     font-weight: 500 !important;
-    font-size: 0.85rem !important; 
+    font-size: 0.85rem !important;
     border-radius: 6px;
     margin: 2px 8px !important;
     padding: 8px 12px;
@@ -69,29 +63,26 @@ header a,
     color: #111827 !important;
 }
 
-/* Активный пункт меню (когда мы внутри раздела) */
 #nav-sidebar ul a.active {
-    background-color: #ffffff !important; 
-    color: #e87722 !important; 
+    background-color: #ffffff !important;
+    color: #e87722 !important;
     font-weight: 700 !important;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* Иконки в меню */
 #nav-sidebar svg {
-    color: #6b7280 !important; 
+    color: #6b7280 !important;
 }
-#nav-sidebar ul a:hover svg, 
+#nav-sidebar ul a:hover svg,
 #nav-sidebar ul a.active svg {
-    color: #e87722 !important; 
+    color: #e87722 !important;
 }
 
-/* Нижняя часть меню (профиль) */
 #nav-sidebar-footer {
     background-color: #e5e7eb !important;
     border-top: 1px solid #d1d5db !important;
 }
-#nav-sidebar-footer a, 
+#nav-sidebar-footer a,
 #nav-sidebar-footer span {
     color: #374151 !important;
 }
@@ -101,16 +92,15 @@ header a,
    ========================================= */
 .custom-card {
     background-color: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
-    border-top: 4px solid #e87722 !important; 
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     border-radius: 12px !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
 }
 
 .custom-card:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-2px);
+    border-color: #e87722 !important; 
 }
 
 .custom-card p {
@@ -119,49 +109,40 @@ header a,
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-size: 0.75rem !important;
-}
-
-.custom-card h2, 
-.custom-card div.font-bold,
-.custom-card .text-2xl {
-    color: #111827 !important; 
-    font-size: 2.2rem !important;
-    font-weight: 800 !important;
-    margin-top: 0.5rem !important;
-}
-
-/* =========================================
-   4. ТАБЛИЦА
-   ========================================= */
-.bg-white.rounded-lg.shadow, 
-div[class*="shadow"] > table {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-    border: 1px solid #e5e7eb !important;
-}
-
-/* --- Иконки на карточках --- */
-.custom-card .material-symbols-outlined {
-    font-size: 2rem !important;
-}
-
-/* Убираем стандартные отступы у заголовков внутри карточек,
-   так как мы задали их через Tailwind-классы в шаблоне */
-.custom-card h2,
-.custom-card p {
     margin: 0 !important;
 }
 
-/* --- Ссылки на поставщиков запчастей (в админке) --- */
-
-.part-supplier-links {
-    margin-top: 6px;
+.custom-card h2,
+.custom-card div.font-bold,
+.custom-card .text-2xl {
+    color: #111827 !important;
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0 !important;
 }
 
-.part-supplier-links__row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+/* Оранжевый акцент для иконок */
+.icon-accent {
+    background-color: #fff7ed !important;
+    color: #e87722 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
 }
+
+.custom-card .material-symbols-outlined {
+    font-size: 2rem !important;
+    display: block !important;
+}
+
+/* =========================================
+   4. ССЫЛКИ НА ПОСТАВЩИКОВ И ИНЛАЙНЫ
+   ========================================= */
+.part-supplier-links { margin-top: 6px; }
+.part-supplier-links__row { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .part-link {
     display: inline-block;
@@ -181,7 +162,6 @@ div[class*="shadow"] > table {
     color: #ffffff !important;
 }
 
-/* Скрываем дублирующиеся заголовки в инлайнах машин и заказов */
 #cars-group .original > tr:first-child,
 #work_orders-group .original > tr:first-child {
     display: none !important;

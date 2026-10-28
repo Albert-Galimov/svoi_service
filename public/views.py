@@ -2,7 +2,7 @@ import logging
 
 from django.shortcuts import redirect, render
 
-from core.constants import CONTACTS, SERVICES
+from core.constants import CONTACTS, SERVICES_LENDING
 from core.forms import BookingForm
 from notifications.service import notify_about_booking
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def home(request):
     """Главная страница: лендинг + форма заявки."""
     context = {
-        "services": SERVICES,
+        "services": SERVICES_LENDING,
         "contacts": CONTACTS,
         "form": BookingForm(),
     }
@@ -39,7 +39,7 @@ def booking_create(request):
         return redirect("public:thanks")
 
     context = {
-        "services": SERVICES,
+        "services": SERVICES_LENDING,
         "contacts": CONTACTS,
         "form": form,
         "scroll_to": "booking",
