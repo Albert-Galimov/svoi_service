@@ -2,10 +2,11 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET
 from django.http import JsonResponse
+from django.db.models import Sum
 from django.template.loader import render_to_string
 
 from public.models import Booking
-from .models import Client, WorkOrder
+from .models import Client, WorkOrder, WarehouseItem
 from core.constants import PART_SUPPLIER_URLS, CONTACTS
 
 
@@ -25,25 +26,32 @@ def dashboard_callback(request, context):
 @login_required
 @require_GET
 def part_lookup_api(request):
-    """Принимает ?article=XXX, возвращает список ссылок на поставщиков.
-
-    Логика простая: артикул нормализуем (trim + upper) и подставляем
-    в шаблоны URL из PART_SUPPLIER_URLS.
-    """
+    """Принимает артикул, возвращает ссылки на поставщиков и остаток на складе."""
     article = request.GET.get("article", "").strip().upper()
-
+    
     if not article:
-        return JsonResponse({"article": "", "suppliers": []})
+        return JsonResponse({"suppliers": [], "stock": 0})
 
-    suppliers = [
-        {
+    # 1. Ищем остаток на складе (суммируем, если вдруг несколько партий одной детали)
+    stock_data = WarehouseItem.objects.filter(
+        article__iexact=article  # Ищем без учета регистра
+    ).aggregate(total=Sum('quantity'))
+    
+    stock = stock_data['total'] or 0
+
+    # 2. Формируем ссылки на поставщиков
+    suppliers = []
+    for supplier_name, url_template in PART_SUPPLIER_URLS.items():
+        suppliers.append({
             "name": supplier_name,
-            "url": url_template.format(article=article),
-        }
-        for supplier_name, url_template in PART_SUPPLIER_URLS.items()
-    ]
+            "url": url_template.format(article=article)
+        })
 
-    return JsonResponse({"article": article, "suppliers": suppliers})
+    return JsonResponse({
+        "article": article,
+        "suppliers": suppliers,
+        "stock": stock  # <-- Возвращаем остаток
+    })
 
 
 @login_required
