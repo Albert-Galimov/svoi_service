@@ -295,3 +295,4 @@ class WarehouseItemAdmin(unfold.admin.ModelAdmin):
             "classes": ("collapse",),
         }),
     )
+    

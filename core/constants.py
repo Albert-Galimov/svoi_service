@@ -13,8 +13,8 @@ PART_SUPPLIER_URLS = {
 }
 
 
-# --- Каталог услуг  ---
-SERVICES = [
+# --- Каталог услуг для сайта  ---
+SERVICES_LENDING = [
     {
         "name": "Замена масла и масляного фильтра",
         "price_from": 500,

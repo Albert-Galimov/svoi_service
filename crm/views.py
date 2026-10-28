@@ -1,25 +1,84 @@
+from datetime import date
+from django.utils.dateparse import parse_date
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET
 from django.http import JsonResponse
-from django.db.models import Sum
+from django.db.models import Sum, F
 from django.template.loader import render_to_string
 
 from public.models import Booking
-from .models import Client, WorkOrder, WarehouseItem
+from .models import Client, WorkOrder, WarehouseItem, Master, WorkOrderItem
 from core.constants import PART_SUPPLIER_URLS, CONTACTS, SERVICES
 
-
+@login_required
 def dashboard_callback(request, context):
     """Собирает статистику для главной страницы админки."""
+    
+    # --- 1. Базовые данные (как было раньше) ---
     context.update({
         "total_clients": Client.objects.count(),
         "new_bookings": Booking.objects.filter(status=Booking.Status.NEW).count(),
         "active_orders": WorkOrder.objects.filter(
-            status__in=[WorkOrder.Status.WAITING_INSTALL, WorkOrder.Status.WAITING_PARTS]
+            status__in=[WorkOrder.Status.WAITING_PARTS, WorkOrder.Status.WAITING_INSTALL]
         ).count(),
         "recent_bookings": Booking.objects.order_by("-created_at")[:5],
+        "masters": Master.objects.filter(is_active=True),
     })
+
+    # --- 2. Финансовая статистика ---
+    today = date.today()
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+    master_id = request.GET.get("master_id")
+
+    # Если даты не выбраны, ставим период: с 1-го числа текущего месяца по сегодня
+    if start_date_str:
+        start_date = parse_date(start_date_str)
+    else:
+        start_date = today.replace(day=1)
+
+    if end_date_str:
+        end_date = parse_date(end_date_str)
+    else:
+        end_date = today
+
+    context.update({
+        "start_date": start_date,
+        "end_date": end_date,
+        "selected_master_id": int(master_id) if master_id else None,
+    })
+
+    # Берем заказы за выбранный период, исключая отмененные
+    orders_in_period = WorkOrder.objects.filter(
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date
+    ).exclude(status='canceled')
+
+    # Берем все позиции из этих заказов
+    items_in_period = WorkOrderItem.objects.filter(work_order__in=orders_in_period)
+
+    # Выражение для подсчета суммы: цена * количество
+    revenue_expr = Sum(F('client_price') * F('quantity'))
+
+    # Считаем выручку по категориям
+    parts_revenue = items_in_period.filter(category='part').aggregate(total=revenue_expr)['total'] or 0
+    services_revenue = items_in_period.filter(category='work').aggregate(total=revenue_expr)['total'] or 0
+
+    context.update({
+        "parts_revenue": parts_revenue,
+        "services_revenue": services_revenue,
+        "total_revenue": parts_revenue + services_revenue,
+    })
+
+    # Считаем выручку конкретного мастера (только за работы)
+    if master_id:
+        master_revenue = items_in_period.filter(
+            category='work', 
+            master_id=master_id
+        ).aggregate(total=revenue_expr)['total'] or 0
+        context["master_revenue"] = master_revenue
+
     return context
 
 
