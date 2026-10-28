@@ -5,10 +5,11 @@
 # Шаблоны ссылок на поиск по артикулу у поставщиков.
 # В {article} подставляется артикул, введённый в заказ-наряде.
 PART_SUPPLIER_URLS = {
-    "Rossko": "https://rossko.ru/search?text={article}",
-    "Exist": "https://exist.ru/price/?pcode={article}",
-    "Armtek": "https://armtek.ru/search?q={article}",
-    "Emex": "https://emex.ru/search?q={article}",
+    "Rossko": "https://kzn.rossko.ru/product/?sid=ece32e70678a3d91d4208400e32b34ea&text={article}",
+    "ПартКом": "https://b2b.part-kom.ru/new/#/search/0/0/0/{article}/406",
+    "Armtek": "https://armtek.ru/search?text={article}",
+    "Berg": "https://berg.ru/search/step2?search={article}",
+    "Тринити": "https://trinity-parts.ru/search/R0114/REIKANEN",
 }
 
 

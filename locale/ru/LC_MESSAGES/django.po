@@ -1266,7 +1266,7 @@ msgstr ""
 
 #: .\venv\Lib\site-packages\unfold\admin.py:228
 msgid "Select action"
-msgstr ""
+msgstr "Выберите действие"
 
 #: .\venv\Lib\site-packages\unfold\contrib\constance\templates\admin\constance\change_list.html:44
 #: .\venv\Lib\site-packages\unfold\contrib\guardian\templates\admin\guardian\model\obj_perms_manage_group.html:26
@@ -1828,7 +1828,7 @@ msgstr ""
 #: .\venv\Lib\site-packages\unfold\templates\admin\actions.html:24
 #: .\venv\Lib\site-packages\unfold\templates\admin\dataset_actions.html:49
 msgid "Run"
-msgstr ""
+msgstr "Выполнить"
 
 #: .\venv\Lib\site-packages\unfold\templates\admin\actions.html:44
 #: .\venv\Lib\site-packages\unfold\templates\admin\dataset_actions.html:17
