@@ -174,7 +174,7 @@ class WorkOrderPartInline(BaseWorkOrderItemInline):
 # --- ИНЛАЙН ДЛЯ УСЛУГ ---
 class WorkOrderWorkInline(BaseWorkOrderItemInline):
     category_value = WorkOrderItem.Category.WORK
-    fields = ("service", "name", "quantity", "client_price") # Без закупочной цены
+    fields = ("service", "name", "master", "quantity", "client_price") # Без закупочной цены
     verbose_name = "Услуга"
     verbose_name_plural = "Работы и услуги"
     class Media:

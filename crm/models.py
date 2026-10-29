@@ -241,6 +241,13 @@ class WorkOrderItem(models.Model):
         max_length=255,
         help_text="Название запчасти или работы.",
     )
+    master = models.ForeignKey(
+        Master, 
+        on_delete=models.SET_NULL, 
+        null=True, blank=True,
+        verbose_name="Мастер",
+        help_text="Кто выполнил эту услугу. По умолчанию берется из заказ-наряда."
+    )
     quantity = models.PositiveIntegerField("Кол-во", default=1)
     purchase_price = models.DecimalField(
         "Закупочная цена",
@@ -268,6 +275,12 @@ class WorkOrderItem(models.Model):
     def total_client_price(self):
         """Сумма для клиента: цена × количество."""
         return self.client_price * self.quantity
+
+    def save(self, *args, **kwargs):
+        """Автоматически подставляем мастера из заказа, если он не указан."""
+        if not self.master_id and self.work_order_id and self.category == self.Category.WORK:
+            self.master = self.work_order.master
+        super().save(*args, **kwargs)
 
 
 class WarehouseItem(models.Model):
