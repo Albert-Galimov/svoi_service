@@ -1,10 +1,11 @@
 import unfold
 
+from django import forms
 from django.contrib import admin
+from django.forms.models import construct_instance # <-- Импортируем функцию для обновления объекта
 from django.urls import reverse
 from django.utils.html import format_html
 
-# Импортируем все модели, включая новую WarehouseItem
 from .models import Car, Master, Client, WorkOrder, WorkOrderItem, WarehouseItem
 
 
@@ -16,40 +17,27 @@ class CarInline(unfold.admin.TabularInline):
     """Показывает машины внутри карточки клиента (только чтение, в виде таблицы)."""
     model = Car
     extra = 0
-    
-    # Используем кастомные методы вместо реальных полей
     fields = ("brand_link", "model_link", "plate_link", "vin_link", "mileage_link")
     readonly_fields = fields
-    
-    # Отключаем стандартную кнопку "Изменить" и заголовок
     show_change_link = False 
-    
-    # Запрещаем удалять прямо отсюда
     can_delete = False
-    
     ordering = ("brand", "model")
 
-    # Отключаем добавление новых машин
     def has_add_permission(self, request, obj=None):
         return False
 
-    # Отключаем редактирование
     def has_change_permission(self, request, obj=None):
         return False
 
-    # --- Вспомогательный метод для генерации ссылки ---
     def _get_link(self, obj, text):
-        """Оборачивает текст в ссылку на редактирование авто."""
         if not obj.pk:
             return text
         url = reverse("admin:crm_car_change", args=[obj.pk])
-        # display: block делает так, чтобы клик срабатывал по всей ячейке
         return format_html(
             '<a href="{}" style="display: block; width: 100%; height: 100%;">{}</a>', 
             url, text
         )
 
-    # --- Кастомные методы для полей ---
     @admin.display(description="Марка")
     def brand_link(self, obj):
         return self._get_link(obj, obj.brand)
@@ -75,26 +63,19 @@ class WorkOrderInline(unfold.admin.TabularInline):
     """Показывает заказ-наряды внутри карточки автомобиля (только чтение)."""
     model = WorkOrder
     extra = 0
-    
-    # Используем кастомные методы для кликабельности
     fields = ("id_link", "status_link", "created_at_link", "description_link")
     readonly_fields = fields
-    
-    show_change_link = False  # Отключаем стандартную кнопку "Изменить"
-    can_delete = False        # Запрещаем удаление
-    ordering = ("-created_at",)  # От новых к старым
+    show_change_link = False
+    can_delete = False
+    ordering = ("-created_at",)
 
-    # Отключаем добавление новых заказов из карточки авто
     def has_add_permission(self, request, obj=None):
         return False
 
-    # Отключаем редактирование прямо в таблице
     def has_change_permission(self, request, obj=None):
         return False
 
-    # --- Вспомогательный метод для генерации ссылки ---
     def _get_link(self, obj, text):
-        """Оборачивает текст в ссылку на редактирование заказа."""
         if not obj.pk:
             return text
         url = reverse("admin:crm_workorder_change", args=[obj.pk])
@@ -103,7 +84,6 @@ class WorkOrderInline(unfold.admin.TabularInline):
             url, text
         )
 
-    # --- Кастомные методы для полей ---
     @admin.display(description="Заказ", ordering="id")
     def id_link(self, obj):
         return self._get_link(obj, f"№{obj.pk}")
@@ -114,36 +94,31 @@ class WorkOrderInline(unfold.admin.TabularInline):
 
     @admin.display(description="Дата", ordering="created_at")
     def created_at_link(self, obj):
-        # Форматируем дату, чтобы она не была слишком длинной
         date_str = obj.created_at.strftime("%d.%m.%Y %H:%M")
         return self._get_link(obj, date_str)
 
     @admin.display(description="Описание")
     def description_link(self, obj):
-        # Если описание очень длинное, можно его обрезать
         desc = obj.description
         if len(desc) > 50:
             desc = desc[:50] + "..."
         return self._get_link(obj, desc)
 
 
-# --- БАЗОВЫЙ ИНЛАЙН ДЛЯ ПОЗИЦИЙ ---
 class BaseWorkOrderItemInline(unfold.admin.TabularInline):
     model = WorkOrderItem
     extra = 1
     category_value = None
 
     def get_queryset(self, request):
-        """Показываем только позиции нужной категории."""
         qs = super().get_queryset(request)
         if self.category_value:
             return qs.filter(category=self.category_value)
         return qs
 
     def get_formset(self, request, obj=None, **kwargs):
-        """Возвращаем кастомный формсет, который принудительно ставит категорию."""
         BaseFormSet = super().get_formset(request, obj, **kwargs)
-        category = self.category_value  # Запоминаем в замыкании для этого инлайна
+        category = self.category_value
 
         class CategorizedFormSet(BaseFormSet):
             def save_new(self, form, commit=True):
@@ -161,7 +136,6 @@ class BaseWorkOrderItemInline(unfold.admin.TabularInline):
         return CategorizedFormSet
 
 
-# --- ИНЛАЙН ДЛЯ ЗАПЧАСТЕЙ И РАСХОДНИКОВ ---
 class WorkOrderPartInline(BaseWorkOrderItemInline):
     category_value = WorkOrderItem.Category.PART
     fields = ("article", "name", "quantity", "purchase_price", "client_price")
@@ -171,10 +145,9 @@ class WorkOrderPartInline(BaseWorkOrderItemInline):
         js = ("js/admin_parts.js",)
 
 
-# --- ИНЛАЙН ДЛЯ УСЛУГ ---
 class WorkOrderWorkInline(BaseWorkOrderItemInline):
     category_value = WorkOrderItem.Category.WORK
-    fields = ("service", "name", "master", "quantity", "client_price") # Без закупочной цены
+    fields = ("service", "name", "master", "quantity", "client_price")
     verbose_name = "Услуга"
     verbose_name_plural = "Работы и услуги"
     class Media:
@@ -193,8 +166,6 @@ class ClientAdmin(unfold.admin.ModelAdmin):
     ordering = ("-created_at",)
     readonly_fields = ("created_at", "updated_at")
     date_hierarchy = "created_at"
-    
-    # ДОБАВЛЕНО: Машины отображаются внутри клиента
     inlines = [CarInline]
 
     fieldsets = (
@@ -215,14 +186,12 @@ class CarAdmin(unfold.admin.ModelAdmin):
     )
     autocomplete_fields = ("client",)
     readonly_fields = ("created_at", "updated_at")
-    
-    # ДОБАВЛЕНО: Заказ-наряды отображаются внутри машины
     inlines = [WorkOrderInline]
 
     fieldsets = (
         ("Владелец", {"fields": ("client",)}),
         ("Автомобиль", {"fields": ("brand", "model", "plate", "vin", "mileage")}),
-        ("Дополнительно", {"fields": ("notes",)}),  # Вынес из 'Служебного', чтобы было видно
+        ("Дополнительно", {"fields": ("notes",)}),
         ("Служебное", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
@@ -230,7 +199,21 @@ class CarAdmin(unfold.admin.ModelAdmin):
 @admin.register(Master)
 class MasterAdmin(unfold.admin.ModelAdmin):
     list_display = ("name", "is_active")
+    search_fields = ("name",) # ДОБАВИЛИ ПОИСК ДЛЯ АВТОДОПОЛНЕНИЯ
     ordering = ("name",)
+
+
+class WorkOrderChangelistForm(forms.ModelForm):
+    class Meta:
+        model = WorkOrder
+        fields = "__all__"
+
+    def _post_clean(self):
+        """Обновляем объект, но пропускаем вызов Model.clean() (валидацию пробега)."""
+        # Эта строка применяет изменения из формы к объекту (в т.ч. новый статус)
+        self.instance = construct_instance(self, self.instance, self._meta.fields, self._meta.exclude)
+        # Мы намеренно не вызываем self.instance.full_clean(), 
+        # чтобы Django не проверял пробег при смене статуса в списке.
 
 
 @admin.register(WorkOrder)
@@ -244,7 +227,8 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
         "car__client__name", "car__client__phone",
         "description",
     )
-    autocomplete_fields = ("car",)
+    # ДОБАВИЛИ "master" СЮДА
+    autocomplete_fields = ("car", "master") 
     readonly_fields = ("created_at", "updated_at")
     date_hierarchy = "created_at"
     inlines = [WorkOrderPartInline, WorkOrderWorkInline]
@@ -257,12 +241,13 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
         ("Сроки", {"fields": ("issued_at", "created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
-    # Подключаем наш JS
     class Media:
         js = ("js/admin_car_notes.js",)
 
+    def get_changelist_form(self, request, **kwargs):
+        return WorkOrderChangelistForm
+
     def print_button(self, obj):
-        """Генерирует ссылку-кнопку для перехода на страницу печати."""
         if obj.pk:
             url = reverse("crm:work_order_print", args=[obj.pk])
             return format_html(
@@ -276,7 +261,6 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
 
 @admin.register(WarehouseItem)
 class WarehouseItemAdmin(unfold.admin.ModelAdmin):
-    """Админка для раздела 'Склад'."""
     list_display = ("article", "name", "quantity", "purchase_price", "updated_at")
     search_fields = ("article", "name", "note")
     list_editable = ("quantity", "purchase_price")
@@ -295,4 +279,3 @@ class WarehouseItemAdmin(unfold.admin.ModelAdmin):
             "classes": ("collapse",),
         }),
     )
-    
