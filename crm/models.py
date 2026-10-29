@@ -185,11 +185,26 @@ class WorkOrder(models.Model):
     def clean(self):
         """Валидация пробега: он не может быть меньше предыдущего."""
         super().clean()
-        if self.mileage and self.car_id:
+        
+        # Пропускаем проверку, если пробег не менялся (например, меняем только статус в списке)
+        if self.pk and self.mileage is not None:
+            old_mileage = (
+                WorkOrder.objects
+                .filter(pk=self.pk)
+                .values_list("mileage", flat=True)
+                .first()
+            )
+            if old_mileage == self.mileage:
+                return
+
+        # Если пробег изменился или это новый заказ — проверяем
+        if self.mileage is not None and self.car_id:
             if self.mileage < self.car.mileage:
-                raise ValidationError({
-                    'mileage': f"Пробег не может быть меньше текущего пробега автомобиля ({self.car.mileage} км)."
-                })
+                # Важно: передаем строку, а не словарь, чтобы не было краша в list_editable
+                raise ValidationError(
+                    f"Пробег ({self.mileage} км) не может быть меньше "
+                    f"текущего пробега автомобиля ({self.car.mileage} км)."
+                )
 
     def save(self, *args, **kwargs):
         # Автозаполнение даты "Выдан" при статусе "Готов"
@@ -199,7 +214,7 @@ class WorkOrder(models.Model):
         super().save(*args, **kwargs)
         
         # Обновляем пробег самой машины, если в заказе указали больше
-        if self.mileage > self.car.mileage:
+        if self.mileage and self.car_id and self.mileage > self.car.mileage:
             self.car.mileage = self.mileage
             self.car.save(update_fields=['mileage'])
 
