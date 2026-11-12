@@ -242,7 +242,7 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
     )
 
     class Media:
-        js = ("js/admin_car_notes.js",)
+        js = ("js/admin_car_notes.js", "js/admin_markup.js")
 
     def get_changelist_form(self, request, **kwargs):
         return WorkOrderChangelistForm

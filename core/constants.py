@@ -61,8 +61,8 @@ SERVICES_LENDING = [
 # --- Контакты  ---
 CONTACTS = {
     "company_name": "Свой Сервис",
-    "phone_display": "+7 (843) 000-00-00",
-    "phone_raw": "+78430000000",  # для ссылок
+    "phone_display": "+7 (905) 317-47-15",
+    "phone_raw": "+79053174715",  # для ссылок
     "address": "г. Казань, ул. Васильченко, 39",
     "hours_weekday": "Пн–Пт: 9:00–19:00",
     "hours_saturday": "Сб: 10:00–17:00",
