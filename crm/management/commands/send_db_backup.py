@@ -45,7 +45,10 @@ class Command(BaseCommand):
         self.stdout.write('Сохраняем документ...')
         save_response = self._vk_api(
             'docs.save',
-            {'file': upload_data['file'], 'title': 'backup.sqlite3'}
+            {
+                'file': upload_data['file'],
+                'title': os.path.basename(file_path),
+            }
         )
         
         if 'error' in save_response:
