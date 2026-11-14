@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal  # <-- ДОБАВИЛИ ИМПОРТ
 from django.utils.dateparse import parse_date
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -15,7 +16,7 @@ from core.constants import PART_SUPPLIER_URLS, CONTACTS
 def dashboard_callback(request, context):
     """Собирает статистику для главной страницы админки."""
     
-    # --- 1. Базовые данные (как было раньше) ---
+    # --- 1. Базовые данные ---
     context.update({
         "total_clients": Client.objects.count(),
         "new_bookings": Booking.objects.filter(status=Booking.Status.NEW).count(),
@@ -62,22 +63,30 @@ def dashboard_callback(request, context):
     revenue_expr = Sum(F('client_price') * F('quantity'))
 
     # Считаем выручку по категориям
-    parts_revenue = items_in_period.filter(category='part').aggregate(total=revenue_expr)['total'] or 0
-    services_revenue = items_in_period.filter(category='work').aggregate(total=revenue_expr)['total'] or 0
+    parts_revenue = items_in_period.filter(category='part').aggregate(total=revenue_expr)['total'] or Decimal('0')
+    services_revenue = items_in_period.filter(category='work').aggregate(total=revenue_expr)['total'] or Decimal('0')
+
+    # Считаем общую ЗП мастеров (50% от выполненных работ)
+    # ИСПРАВЛЕНО: умножаем на Decimal('0.5'), а не на float 0.5
+    total_salary = services_revenue * Decimal('0.5')
 
     context.update({
         "parts_revenue": parts_revenue,
         "services_revenue": services_revenue,
         "total_revenue": parts_revenue + services_revenue,
+        "total_salary": total_salary,
     })
 
-    # Считаем выручку конкретного мастера (только за работы)
+    # Считаем выручку и ЗП конкретного мастера (только за работы)
     if master_id:
         master_revenue = items_in_period.filter(
             category='work', 
             master_id=master_id
-        ).aggregate(total=revenue_expr)['total'] or 0
+        ).aggregate(total=revenue_expr)['total'] or Decimal('0')
+        
         context["master_revenue"] = master_revenue
+        # ИСПРАВЛЕНО: умножаем на Decimal('0.5')
+        context["master_salary"] = master_revenue * Decimal('0.5')
 
     return context
 
@@ -85,15 +94,7 @@ def dashboard_callback(request, context):
 @login_required
 @require_GET
 def part_lookup_api(request):
-    """Принимает ?article=XXX и возвращает данные о детали.
-
-    Возвращает:
-      - suppliers:     ссылки на поставщиков (как раньше);
-      - stock:         суммарный остаток на складе (как раньше);
-      - name:          название детали из склада (если есть хоть одна запись);
-      - purchase_price: закупочная цена из склада — только если есть
-                        хоть одна партия с quantity > 0.
-    """
+    """Принимает ?article=XXX и возвращает данные о детали."""
     article = request.GET.get("article", "").strip().upper()
 
     if not article:
@@ -101,14 +102,11 @@ def part_lookup_api(request):
             {"article": "", "suppliers": [], "stock": 0, "name": "", "purchase_price": ""}
         )
 
-    # 1. Суммарный остаток на складе.
     stock_data = WarehouseItem.objects.filter(
         article__iexact=article,
     ).aggregate(total=Sum("quantity"))
     stock = stock_data["total"] or 0
 
-    # 2. Данные из складской карточки.
-    #    Приоритет — партия с остатком; при равном остатке — более свежая.
     item_with_stock = (
         WarehouseItem.objects
         .filter(article__iexact=article, quantity__gt=0)
@@ -126,14 +124,11 @@ def part_lookup_api(request):
     purchase_price = ""
 
     if item_with_stock:
-        # Есть на складе — берём и название, и цену.
         name = item_with_stock.name
         purchase_price = str(item_with_stock.purchase_price)
     elif item_any:
-        # Запись есть, но остаток 0 — берём только название.
         name = item_any.name
 
-    # 3. Ссылки на поставщиков (как раньше).
     suppliers = [
         {
             "name": supplier_name,
@@ -154,10 +149,7 @@ def part_lookup_api(request):
 @login_required
 @require_GET
 def service_lookup_api(request):
-    """Возвращает название и цену выбранной услуги из справочника.
-
-    Принимает ?id=<pk Service>. Отдаёт JSON: {"name": "...", "price": "..."}.
-    """
+    """Возвращает название и цену выбранной услуги из справочника."""
     service_id = request.GET.get("id", "").strip()
     if not service_id:
         return JsonResponse({"name": "", "price": ""})
@@ -178,23 +170,19 @@ def work_order_print(request, pk):
     """Страница печати прайса для клиента."""
     order = get_object_or_404(WorkOrder, pk=pk)
     
-    # Разделяем на группы
     parts_and_consumables = order.items.filter(category='part')
     works = order.items.filter(category='work')
     
-    # Считаем итоги по группам
     parts_subtotal = sum(item.total_client_price for item in parts_and_consumables)
     works_subtotal = sum(item.total_client_price for item in works)
-    
-    # Считаем общий итог
     total = parts_subtotal + works_subtotal
 
     context = {
         "order": order,
         "parts_and_consumables": parts_and_consumables,
         "works": works,
-        "parts_subtotal": parts_subtotal, # <-- Добавили
-        "works_subtotal": works_subtotal, # <-- Добавили
+        "parts_subtotal": parts_subtotal,
+        "works_subtotal": works_subtotal,
         "total": total,
         "contacts": CONTACTS,
     }
@@ -204,7 +192,7 @@ def work_order_print(request, pk):
 @login_required
 @require_GET
 def car_notes_api(request):
-    """Возвращает HTML-блок с заметками + данные авто (пробег, VIN, номер)."""
+    """Возвращает HTML-блок с заметками + данные авто."""
     car_id = request.GET.get("car_id")
     exclude_id = request.GET.get("exclude_id")
 

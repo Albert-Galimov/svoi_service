@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Прайс-лист {{ order.car.brand }} {{ order.car.model }} от {{ order.created_at|date:"d.m.Y" }}</title>
+    
+    <!-- Подключаем библиотеку для создания скриншотов -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    
     <style>
         /* --- Базовые стили для экрана --- */
         body {
@@ -71,7 +75,7 @@
             padding-top: 20px;
         }
 
-        /* --- Кнопка печати (скрывается при печати) --- */
+        /* --- Кнопки (скрываются при печати) --- */
         .print-btn-wrapper {
             text-align: center;
             margin-top: 30px;
@@ -86,8 +90,12 @@
             border-radius: 6px;
             cursor: pointer;
             transition: background 0.15s;
+            margin: 0 5px;
         }
         .print-btn:hover { background-color: #c76012; }
+        .btn-download { background-color: #0d6efd; }
+        .btn-download:hover { background-color: #0b5ed7; }
+        .print-btn:disabled { background-color: #ccc; cursor: not-allowed; }
 
         /* --- Стили ТОЛЬКО для печати (@media print) --- */
         @media print {
@@ -101,13 +109,11 @@
                 padding: 0;
                 max-width: 100%;
             }
-            /* Скрываем кнопку печати на бумаге */
+            /* Скрываем кнопки на бумаге */
             .print-btn-wrapper { display: none; }
             
-            /* Убираем поля браузера, чтобы таблица влезла целиком */
             @page { margin: 15mm; }
             
-            /* Повторяем заголовок таблицы на новой странице, если позиций много */
             thead { display: table-header-group; }
             tr { page-break-inside: avoid; }
         }
@@ -125,7 +131,7 @@
 
     <div class="info-grid">
         <div class="info-block">
-            <!-- ЗАМЕНИЛИ КЛИЕНТА НА VIN -->
+            <!-- Заменили Клиента на VIN -->
             <strong>VIN:</strong>
             <span>{{ order.car.vin|default:"—" }}</span><br>
             <strong>Телефон:</strong>
@@ -169,9 +175,7 @@
             {% for item in parts_and_consumables %}
             <tr>
                 <td class="text-center">{{ forloop.counter }}</td>
-                <td>
-                    {{ item.name }}
-                </td>
+                <td>{{ item.name }}</td>
                 <td class="text-center">{{ item.quantity }}</td>
                 <td class="text-right">{{ item.client_price|floatformat:2 }}</td>
                 <td class="text-right">{{ item.total_client_price|floatformat:2 }}</td>
@@ -182,7 +186,7 @@
             </tr>
             {% endfor %}
         </tbody>
-        <!-- ДОБАВИЛИ ПОДЫТОГ ПО ЗАПЧАСТЯМ -->
+        <!-- Подытог по запчастям -->
         <tfoot>
             <tr style="background-color: #f8f9fa; font-weight: bold;">
                 <td colspan="4" class="text-right">Итого по запчастям:</td>
@@ -218,13 +222,12 @@
             </tr>
             {% endfor %}
         </tbody>
+        <!-- Подытоги и общая сумма -->
         <tfoot>
-            <!-- ДОБАВИЛИ ПОДЫТОГ ПО РАБОТАМ -->
             <tr style="background-color: #f8f9fa; font-weight: bold;">
                 <td colspan="4" class="text-right">Итого по работам:</td>
                 <td class="text-right">{{ works_subtotal|floatformat:2 }} ₽</td>
             </tr>
-            <!-- ОБЩИЙ ИТОГ ОСТАВИЛИ СНИЗУ -->
             <tr class="total-row" style="border-top: 2px solid #222;">
                 <td colspan="4" class="text-right">ВСЕГО К ОПЛАТЕ:</td>
                 <td class="text-right">{{ total|floatformat:2 }} ₽</td>
@@ -251,11 +254,54 @@
         <p>Запчасти и расходные материалы могут быть предоставлены клиентом или приобретены сервисом.</p>
     </div>
 
+    <!-- Блок с кнопками -->
     <div class="print-btn-wrapper">
         <button class="print-btn" onclick="window.print()">🖨️ Распечатать прайс</button>
+        <button id="download-btn" class="print-btn btn-download">📷 Скачать как фото</button>
     </div>
 
 </div>
+
+<!-- Скрипт для создания картинки -->
+<script>
+    document.getElementById('download-btn').addEventListener('click', function() {
+        const element = document.querySelector('.print-container');
+        const btn = this;
+
+        // Меняем текст на кнопке, чтобы было понятно, что идет процесс
+        btn.textContent = '⏳ Готовим...';
+        btn.disabled = true;
+
+        // Даем браузеру 100мс, чтобы обновить кнопку перед тяжелым рендером
+        setTimeout(() => {
+            html2canvas(element, {
+                scale: 2, // Качество картинки (2 = ретина)
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                // ВОТ ГЛАВНАЯ СТРОКА: игнорируем блок с кнопками при создании фото
+                ignoreElements: function(el) {
+                    return el.classList.contains('print-btn-wrapper');
+                }
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                // Имя файла будет содержать марку и модель авто
+                link.download = 'Прайс_{{ order.car.brand }}_{{ order.car.model }}.png';
+                link.href = imgData;
+                link.click();
+
+                // Возвращаем кнопку обратно
+                btn.textContent = '📷 Скачать как фото';
+                btn.disabled = false;
+            }).catch(err => {
+                console.error('Ошибка:', err);
+                alert('Не удалось создать фото.');
+                btn.textContent = '📷 Скачать как фото';
+                btn.disabled = false;
+            });
+        }, 100);
+    });
+</script>
 
 </body>
 </html>

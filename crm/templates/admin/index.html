@@ -51,7 +51,8 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-3 mb-10">
+    {# Сетку сделали 4 колонки на больших экранах #}
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-10">
         {# Общая выручка #}
         <div class="custom-card p-6 border-t-4 border-orange-500 flex items-center justify-between">
             <div>
@@ -87,17 +88,36 @@
                 <span class="material-symbols-outlined">construction</span>
             </div>
         </div>
+
+        {# Новая карточка: Зарплата (ФОТ) #}
+        <div class="custom-card p-6 border-t-4 border-emerald-500 flex items-center justify-between">
+            <div>
+                <p class="m-0 text-gray-500 font-semibold uppercase text-xs tracking-wider">ЗП мастера</p>
+                <h2 class="m-0 text-3xl font-extrabold text-emerald-600 mt-2">{{ total_salary|floatformat:0 }} ₽</h2>
+                <p class="text-xs text-gray-400 mt-2">За выбранный период</p>
+            </div>
+            <div class="hidden sm:flex items-center justify-center w-12 h-12 bg-emerald-50 text-emerald-500 rounded-lg">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+            </div>
+        </div>
     </div>
 
-    {# Карточка мастера #}
+    {# Карточка конкретного мастера (показывается только если выбран мастер) #}
     {% if master_revenue is not None %}
     <div class="mb-10">
-        <div class="custom-card p-6 border-l-4 border-orange-500 flex items-center justify-between">
+        <div class="custom-card p-6 border-l-4 border-orange-500 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
                 <p class="m-0 text-orange-600 font-semibold uppercase text-xs tracking-wider">Личная выручка мастера за период</p>
                 <h2 class="m-0 text-4xl font-extrabold text-gray-900 mt-2">{{ master_revenue|floatformat:0 }} ₽</h2>
                 <p class="text-xs text-gray-400 mt-2">Считается только по выполненным работам</p>
             </div>
+            
+            <div class="border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-8">
+                <p class="m-0 text-emerald-600 font-semibold uppercase text-xs tracking-wider">ЗП мастера (50%)</p>
+                <h2 class="m-0 text-4xl font-extrabold text-emerald-600 mt-2">{{ master_salary|floatformat:0 }} ₽</h2>
+                <p class="text-xs text-gray-400 mt-2">К выплате сотруднику</p>
+            </div>
+            
             <div class="text-6xl opacity-10 hidden md:block">🛠️</div>
         </div>
     </div>
@@ -153,7 +173,6 @@
         <p class="text-sm text-gray-500 mt-1">Последние заявки, оставленные клиентами через форму на лендинге.</p>
     </div>
 
-    {# Убрали лишние классы, ломающие таблицу #}
     <div class="bg-white rounded-xl border border-gray-200">
         <table class="w-full text-sm text-left">
             <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
