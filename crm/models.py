@@ -84,6 +84,11 @@ class Car(models.Model):
     )
     brand = models.CharField("Марка", max_length=50)
     model = models.CharField("Модель", max_length=50)
+    year = models.PositiveSmallIntegerField(
+        "Год выпуска", 
+        null=True, 
+        blank=True,
+    )
     plate = models.CharField(
         "Госномер", max_length=20, db_index=True,
         validators=[validate_license_plate]

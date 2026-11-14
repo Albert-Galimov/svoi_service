@@ -17,7 +17,7 @@ class CarInline(unfold.admin.TabularInline):
     """Показывает машины внутри карточки клиента (только чтение, в виде таблицы)."""
     model = Car
     extra = 0
-    fields = ("brand_link", "model_link", "plate_link", "vin_link", "mileage_link")
+    fields = ("brand_link", "model_link", "year_link", "plate_link", "vin_link", "mileage_link")
     readonly_fields = fields
     show_change_link = False 
     can_delete = False
@@ -49,6 +49,10 @@ class CarInline(unfold.admin.TabularInline):
     @admin.display(description="Госномер")
     def plate_link(self, obj):
         return self._get_link(obj, obj.plate)
+
+    @admin.display(description="Год")
+    def year_link(self, obj):
+        return self._get_link(obj, obj.year or "—")
 
     @admin.display(description="VIN")
     def vin_link(self, obj):
@@ -180,11 +184,11 @@ class ClientAdmin(unfold.admin.ModelAdmin):
 
 @admin.register(Car)
 class CarAdmin(unfold.admin.ModelAdmin):
-    list_display = ("__str__", "client", "vin", "plate", "mileage")
-    list_display_links = ("__str__", "client", "vin", "plate", "mileage")
+    list_display = ("__str__", "client", "vin", "year", "plate", "mileage")
+    list_display_links = ("__str__", "client", "vin", "year", "plate", "mileage")
     list_filter = ("brand",)
     search_fields = (
-        "plate", "vin", "brand", "model",
+        "plate", "vin", "year", "brand", "model",
         "client__name", "client__phone",
     )
     autocomplete_fields = ("client",)
@@ -193,7 +197,7 @@ class CarAdmin(unfold.admin.ModelAdmin):
 
     fieldsets = (
         ("Владелец", {"fields": ("client",)}),
-        ("Автомобиль", {"fields": ("brand", "model", "plate", "vin", "mileage")}),
+        ("Автомобиль", {"fields": ("brand", "model", "year", "plate", "vin", "mileage")}),
         ("Дополнительно", {"fields": ("notes",)}),
         ("Служебное", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )

@@ -139,7 +139,9 @@
         </div>
         <div class="info-block">
             <strong>Автомобиль:</strong>
-            <span>{{ order.car.brand }} {{ order.car.model }}</span><br>
+            <span>{{ order.car.brand }} {{ order.car.model }}</span>
+            {% if order.car.year %}<span>({{ order.car.year }} г.)</span>{% endif %}
+            <br>
             {% if order.car.plate %}
                 <strong>Госномер:</strong>
                 <span>{{ order.car.plate }}</span>

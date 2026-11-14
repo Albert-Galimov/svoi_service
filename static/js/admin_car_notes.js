@@ -1,11 +1,11 @@
 /**
  * При выборе автомобиля в заказ-наряде:
  *   - показывает прошлые рекомендации мастера;
- *   - показывает VIN и госномер авто (read-only, клик = копирование).
+ *   - показывает год, VIN и госномер авто (read-only, клик = копирование).
  */
 
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("JS для заметок и VIN загружен");
+    console.log("JS для заметок, VIN и года загружен");
     const apiUrl = "/crm/api/car-notes/";
 
     function getExcludeId() {
@@ -59,12 +59,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // ---------- отображение VIN и номера ----------
+    // ---------- отображение данных авто ----------
 
     function buildCopyLine(label, value) {
         const wrap = document.createElement("span");
         wrap.style.display = "inline-block";
-        wrap.style.marginRight = "24px"; // Отступ между VIN и Госномером
+        wrap.style.marginRight = "24px"; // Отступ между элементами
         wrap.style.marginBottom = "4px";
 
         const strong = document.createElement("strong");
@@ -106,15 +106,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
         container.innerHTML = "";
 
-        if (!data.vin && !data.plate) {
+        // Если нет ни года, ни VIN, ни номера — скрываем
+        if (!data.year && !data.vin && !data.plate) {
             container.style.display = "none";
             return;
         }
         container.style.display = "block";
 
+        // 1. Выводим год выпуска
+        if (data.year) {
+            container.appendChild(buildCopyLine("Год", data.year));
+        }
+
+        // 2. Выводим VIN
         if (data.vin) {
             container.appendChild(buildCopyLine("VIN", data.vin));
         }
+
+        // 3. Выводим госномер
         if (data.plate) {
             container.appendChild(buildCopyLine("Госномер", data.plate));
         }
@@ -128,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!carId) {
             if (container) container.innerHTML = "";
-            renderCarInfo(carSelect, { vin: "", plate: "" });
+            renderCarInfo(carSelect, { year: "", vin: "", plate: "" });
             return;
         }
 
@@ -140,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // 1. Заметки
                 if (container) container.innerHTML = data.html || "";
 
-                // 2. VIN и госномер
+                // 2. Год, VIN и госномер
                 renderCarInfo(carSelect, data);
             })
             .catch(function (err) { console.error("ОШИБКА:", err); });

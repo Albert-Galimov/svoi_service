@@ -196,8 +196,9 @@ def car_notes_api(request):
     car_id = request.GET.get("car_id")
     exclude_id = request.GET.get("exclude_id")
 
+    # Добавили year в пустой ответ
     empty = JsonResponse({
-        "html": "", "mileage": 0, "vin": "", "plate": "",
+        "html": "", "mileage": 0, "vin": "", "plate": "", "year": "",
     })
 
     if not car_id:
@@ -229,4 +230,5 @@ def car_notes_api(request):
         "mileage": car.mileage,
         "vin": car.vin or "",
         "plate": car.plate or "",
+        "year": car.year or "", # <--- ВОТ ЭТА СТРОКА БЫЛА ПРОПУЩЕНА
     })
