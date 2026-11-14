@@ -1,83 +1,111 @@
+/**
+ * Ссылки на поставщиков + проверка остатков на складе.
+ *
+ * Работает через делегирование событий на document — поэтому
+ * автоматически подхватывает и существующие строки, и новые,
+ * добавленные кнопкой «Добавить ещё одну запчасть».
+ */
+
 document.addEventListener("DOMContentLoaded", function () {
-    const articleInputs = document.querySelectorAll('input[name$="-article"]');
+    console.log("JS для запчастей загружен (делегирование)");
 
-    articleInputs.forEach(function (input) {
-        // Создаем контейнер под ссылки и плашки
-        const linkContainer = document.createElement("div");
-        linkContainer.className = "part-supplier-links";
-        input.parentNode.appendChild(linkContainer);
+    // Хранилище дебаунсеров по каждому input, чтобы не срабатывал на каждую букву
+    const debounceTimers = new WeakMap();
 
-        let debounceTimer = null;
+    function ensureLinkContainer(input) {
+        // Ищем контейнер в той же ячейке/строке, где лежит инпут.
+        // Сначала ищем уже созданный (при повторном вводе не дублируем).
+        const row = input.closest("tr");
+        if (!row) return null;
 
-        input.addEventListener("input", function () {
-            clearTimeout(debounceTimer);
+        let container = row.querySelector(".part-supplier-links");
+        if (container) return container;
 
-            const article = input.value.trim().toUpperCase();
-            if (!article) {
-                linkContainer.innerHTML = "";
-                return;
-            }
+        container = document.createElement("div");
+        container.className = "part-supplier-links";
 
-            // Ждем полсекунды после последнего нажатия клавиши
-            debounceTimer = setTimeout(function () {
-                fetch(`/crm/api/part-lookup/?article=${encodeURIComponent(article)}`)
-                    .then(function (response) {
-                        if (!response.ok) throw new Error("HTTP " + response.status);
-                        return response.json();
-                    })
-                    .then(function (data) {
-                        if (!data.suppliers) {
-                            linkContainer.innerHTML = "";
-                            return;
-                        }
+        const td = input.closest("td");
+        if (td) {
+            td.appendChild(container);
+        } else {
+            input.parentNode.appendChild(container);
+        }
+        return container;
+    }
 
-                        const wrapper = document.createElement("div");
-                        wrapper.className = "part-supplier-links__row";
-                        // Стили для строки, чтобы всё было в одну линию
-                        wrapper.style.display = "flex";
-                        wrapper.style.flexWrap = "wrap";
-                        wrapper.style.gap = "6px";
-                        wrapper.style.marginTop = "6px";
-                        wrapper.style.alignItems = "center";
+    function renderLinks(container, data) {
+        if (!data.suppliers || data.suppliers.length === 0) {
+            container.innerHTML = "";
+            return;
+        }
 
-                        // --- БЛОК СКЛАДА ---
-                        const stockBadge = document.createElement("span");
-                        if (data.stock > 0) {
-                            // Зеленый, если есть на складе
-                            stockBadge.style.cssText = "background-color: #10b981; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;";
-                            stockBadge.textContent = `Склад: остаток ${data.stock}`;
-                        } else {
-                            // Красный, если нет
-                            stockBadge.style.cssText = "background-color: #ef4444; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;";
-                            stockBadge.textContent = `Склад: остаток 0`;
-                        }
-                        wrapper.appendChild(stockBadge);
+        const wrapper = document.createElement("div");
+        wrapper.className = "part-supplier-links__row";
 
-                        // --- ССЫЛКИ НА ПОСТАВЩИКОВ ---
-                        data.suppliers.forEach(function (supplier) {
-                            const link = document.createElement("a");
-                            link.href = supplier.url;
-                            link.target = "_blank";
-                            link.rel = "noopener noreferrer";
-                            link.className = "part-link";
-                            link.textContent = supplier.name;
-                            wrapper.appendChild(link);
-                        });
+        // Плашка склада
+        const stockBadge = document.createElement("span");
+        const stockCount = data.stock !== undefined ? data.stock : 0;
+        if (stockCount > 0) {
+            stockBadge.style.cssText = "background-color: #10b981; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;";
+            stockBadge.textContent = `Склад: остаток ${stockCount}`;
+        } else {
+            stockBadge.style.cssText = "background-color: #ef4444; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;";
+            stockBadge.textContent = "Склад: остаток 0";
+        }
+        wrapper.appendChild(stockBadge);
 
-                        linkContainer.innerHTML = "";
-                        linkContainer.appendChild(wrapper);
-                    })
-                    .catch(function (err) {
-                        console.error("Ошибка получения данных:", err);
-                    });
-            }, 500);
+        // Ссылки на поставщиков
+        data.suppliers.forEach(function (supplier) {
+            const link = document.createElement("a");
+            link.href = supplier.url;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.className = "part-link";
+            link.textContent = supplier.name;
+            wrapper.appendChild(link);
         });
 
-        // Очистка при удалении артикула
-        input.addEventListener("blur", function () {
-            if (!input.value.trim()) {
-                linkContainer.innerHTML = "";
-            }
-        });
+        container.innerHTML = "";
+        container.appendChild(wrapper);
+    }
+
+    // Один слушатель на весь документ
+    document.addEventListener("input", function (e) {
+        const input = e.target;
+        if (!input || !input.name) return;
+        if (!input.name.endsWith("-article")) return;
+
+        const container = ensureLinkContainer(input);
+        if (!container) return;
+
+        const article = input.value.trim().toUpperCase();
+
+        // Пользователь стёр артикул — очищаем ссылки
+        if (!article) {
+            container.innerHTML = "";
+            return;
+        }
+
+        // Дебаунс на 400 мс — чтобы не дёргать сервер на каждую букву
+        if (debounceTimers.has(input)) {
+            clearTimeout(debounceTimers.get(input));
+        }
+
+        const t = setTimeout(function () {
+            console.log("Запрос ссылок для артикула:", article);
+            fetch(`/crm/api/part-lookup/?article=${encodeURIComponent(article)}`)
+                .then(function (response) {
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    return response.json();
+                })
+                .then(function (data) {
+                    renderLinks(container, data);
+                })
+                .catch(function (err) {
+                    console.error("Ошибка получения ссылок:", err);
+                });
+        }, 400);
+
+        debounceTimers.set(input, t);
     });
 });
