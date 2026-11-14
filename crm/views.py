@@ -85,31 +85,69 @@ def dashboard_callback(request, context):
 @login_required
 @require_GET
 def part_lookup_api(request):
-    """Принимает артикул, возвращает ссылки на поставщиков и остаток на складе."""
+    """Принимает ?article=XXX и возвращает данные о детали.
+
+    Возвращает:
+      - suppliers:     ссылки на поставщиков (как раньше);
+      - stock:         суммарный остаток на складе (как раньше);
+      - name:          название детали из склада (если есть хоть одна запись);
+      - purchase_price: закупочная цена из склада — только если есть
+                        хоть одна партия с quantity > 0.
+    """
     article = request.GET.get("article", "").strip().upper()
-    
+
     if not article:
-        return JsonResponse({"suppliers": [], "stock": 0})
+        return JsonResponse(
+            {"article": "", "suppliers": [], "stock": 0, "name": "", "purchase_price": ""}
+        )
 
-    # 1. Ищем остаток на складе (суммируем, если вдруг несколько партий одной детали)
+    # 1. Суммарный остаток на складе.
     stock_data = WarehouseItem.objects.filter(
-        article__iexact=article  # Ищем без учета регистра
-    ).aggregate(total=Sum('quantity'))
-    
-    stock = stock_data['total'] or 0
+        article__iexact=article,
+    ).aggregate(total=Sum("quantity"))
+    stock = stock_data["total"] or 0
 
-    # 2. Формируем ссылки на поставщиков
-    suppliers = []
-    for supplier_name, url_template in PART_SUPPLIER_URLS.items():
-        suppliers.append({
+    # 2. Данные из складской карточки.
+    #    Приоритет — партия с остатком; при равном остатке — более свежая.
+    item_with_stock = (
+        WarehouseItem.objects
+        .filter(article__iexact=article, quantity__gt=0)
+        .order_by("-updated_at")
+        .first()
+    )
+    item_any = (
+        WarehouseItem.objects
+        .filter(article__iexact=article)
+        .order_by("-updated_at")
+        .first()
+    )
+
+    name = ""
+    purchase_price = ""
+
+    if item_with_stock:
+        # Есть на складе — берём и название, и цену.
+        name = item_with_stock.name
+        purchase_price = str(item_with_stock.purchase_price)
+    elif item_any:
+        # Запись есть, но остаток 0 — берём только название.
+        name = item_any.name
+
+    # 3. Ссылки на поставщиков (как раньше).
+    suppliers = [
+        {
             "name": supplier_name,
-            "url": url_template.format(article=article)
-        })
+            "url": url_template.format(article=article),
+        }
+        for supplier_name, url_template in PART_SUPPLIER_URLS.items()
+    ]
 
     return JsonResponse({
         "article": article,
         "suppliers": suppliers,
-        "stock": stock  # <-- Возвращаем остаток
+        "stock": stock,
+        "name": name,
+        "purchase_price": purchase_price,
     })
 
 
