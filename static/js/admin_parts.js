@@ -1,20 +1,26 @@
 /**
- * Ссылки на поставщиков + проверка остатков на складе.
+ * Ссылки на поставщиков + проверка остатков на складе +
+ * автоподстановка названия и закупочной цены из складской карточки.
  *
- * Работает через делегирование событий на document — поэтому
- * автоматически подхватывает и существующие строки, и новые,
- * добавленные кнопкой «Добавить ещё одну запчасть».
+ * Работает через делегирование событий на document — подхватывает
+ * и существующие строки, и новые после «Добавить ещё одну запчасть».
+ *
+ * Поведение:
+ *  - при вводе артикула — запрос к API; если на складе есть данные,
+ *    подставляются название и (при остатке > 0) закупочная цена;
+ *    существующие значения в этих полях ЗАМЕНЯЮТСЯ;
+ *  - при полной очистке артикула — контейнер со ссылками, название,
+ *    закупочная цена и цена для клиента в этой строке очищаются.
  */
 
 document.addEventListener("DOMContentLoaded", function () {
     console.log("JS для запчастей загружен (делегирование)");
 
-    // Хранилище дебаунсеров по каждому input, чтобы не срабатывал на каждую букву
     const debounceTimers = new WeakMap();
 
+    // ---- Утилиты ----
+
     function ensureLinkContainer(input) {
-        // Ищем контейнер в той же ячейке/строке, где лежит инпут.
-        // Сначала ищем уже созданный (при повторном вводе не дублируем).
         const row = input.closest("tr");
         if (!row) return null;
 
@@ -34,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function renderLinks(container, data) {
-        if (!data.suppliers || data.suppliers.length === 0) {
+        if (!data || !data.suppliers || data.suppliers.length === 0) {
             container.innerHTML = "";
             return;
         }
@@ -42,19 +48,23 @@ document.addEventListener("DOMContentLoaded", function () {
         const wrapper = document.createElement("div");
         wrapper.className = "part-supplier-links__row";
 
-        // Плашка склада
         const stockBadge = document.createElement("span");
         const stockCount = data.stock !== undefined ? data.stock : 0;
         if (stockCount > 0) {
-            stockBadge.style.cssText = "background-color: #10b981; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;";
+            stockBadge.style.cssText =
+                "background-color: #10b981; color: white; " +
+                "padding: 3px 8px; border-radius: 4px; " +
+                "font-size: 11px; font-weight: bold;";
             stockBadge.textContent = `Склад: остаток ${stockCount}`;
         } else {
-            stockBadge.style.cssText = "background-color: #ef4444; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;";
+            stockBadge.style.cssText =
+                "background-color: #ef4444; color: white; " +
+                "padding: 3px 8px; border-radius: 4px; " +
+                "font-size: 11px; font-weight: bold;";
             stockBadge.textContent = "Склад: остаток 0";
         }
         wrapper.appendChild(stockBadge);
 
-        // Ссылки на поставщиков
         data.suppliers.forEach(function (supplier) {
             const link = document.createElement("a");
             link.href = supplier.url;
@@ -69,8 +79,45 @@ document.addEventListener("DOMContentLoaded", function () {
         container.appendChild(wrapper);
     }
 
-    // Один слушатель на весь документ
-    document.addEventListener("input", function (e) {
+    /** Подставляет название и закупочную цену, ЗАМЕНЯЯ существующие значения. */
+    function applyWarehouseData(input, data) {
+        const row = input.closest("tr");
+        if (!row) return;
+
+        const nameInput = row.querySelector('input[name$="-name"]');
+        const purchaseInput = row.querySelector('input[name$="-purchase_price"]');
+
+        // Название — заменяем при каждом успешном автозаполнении.
+        if (nameInput && data.name) {
+            nameInput.value = data.name;
+            nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+            console.log("Название заменено из склада:", data.name);
+        }
+
+        // Закупочная цена — заменяем, если есть остаток на складе.
+        if (purchaseInput && data.purchase_price && data.stock > 0) {
+            purchaseInput.value = data.purchase_price;
+            // admin_markup.js посчитает «Цену для клиента» +30%
+            purchaseInput.dispatchEvent(new Event("input", { bubbles: true }));
+            console.log("Закупочная цена заменена из склада:", data.purchase_price);
+        }
+    }
+
+    /** Полностью очищает в строке название, закупочную и цену клиента. */
+    function clearRowFields(row) {
+        ["-name", "-purchase_price", "-client_price"].forEach(function (suffix) {
+            const f = row.querySelector(`input[name$="${suffix}"]`);
+            if (!f) return;
+            if (f.value !== "") {
+                f.value = "";
+                f.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+        });
+    }
+
+    // ---- Основной обработчик ----
+
+    function handleArticleChange(e) {
         const input = e.target;
         if (!input || !input.name) return;
         if (!input.name.endsWith("-article")) return;
@@ -80,26 +127,40 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const article = input.value.trim().toUpperCase();
 
-        // Пользователь стёр артикул — очищаем ссылки
+        // ---- Артикул стёрт: чистим всё в строке ----
         if (!article) {
+            if (debounceTimers.has(input)) {
+                clearTimeout(debounceTimers.get(input));
+                debounceTimers.delete(input);
+            }
             container.innerHTML = "";
+
+            const row = input.closest("tr");
+            if (row) clearRowFields(row);
             return;
         }
 
-        // Дебаунс на 400 мс — чтобы не дёргать сервер на каждую букву
+        // ---- Артикул непустой: дебаунс и запрос ----
         if (debounceTimers.has(input)) {
             clearTimeout(debounceTimers.get(input));
         }
 
         const t = setTimeout(function () {
             console.log("Запрос ссылок для артикула:", article);
+
             fetch(`/crm/api/part-lookup/?article=${encodeURIComponent(article)}`)
                 .then(function (response) {
                     if (!response.ok) throw new Error("HTTP " + response.status);
                     return response.json();
                 })
                 .then(function (data) {
+                    // Защита от гонки: пока запрос был в полёте, пользователь мог
+                    // стереть поле или ввести другой артикул.
+                    const current = input.value.trim().toUpperCase();
+                    if (current !== article) return;
+
                     renderLinks(container, data);
+                    applyWarehouseData(input, data);
                 })
                 .catch(function (err) {
                     console.error("Ошибка получения ссылок:", err);
@@ -107,5 +168,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 400);
 
         debounceTimers.set(input, t);
-    });
+    }
+
+    document.addEventListener("input", handleArticleChange);
+    document.addEventListener("change", handleArticleChange);
 });
