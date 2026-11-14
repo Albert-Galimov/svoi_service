@@ -123,10 +123,11 @@
         <p>{{ contacts.address }}</p>
     </div>
 
-        <div class="info-grid">
+    <div class="info-grid">
         <div class="info-block">
-            <strong>Клиент:</strong>
-            <span>{{ order.car.client.name }}</span><br>
+            <!-- ЗАМЕНИЛИ КЛИЕНТА НА VIN -->
+            <strong>VIN:</strong>
+            <span>{{ order.car.vin|default:"—" }}</span><br>
             <strong>Телефон:</strong>
             <span>{{ order.car.client.phone }}</span>
         </div>
@@ -181,6 +182,13 @@
             </tr>
             {% endfor %}
         </tbody>
+        <!-- ДОБАВИЛИ ПОДЫТОГ ПО ЗАПЧАСТЯМ -->
+        <tfoot>
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td colspan="4" class="text-right">Итого по запчастям:</td>
+                <td class="text-right">{{ parts_subtotal|floatformat:2 }} ₽</td>
+            </tr>
+        </tfoot>
     </table>
 
     <!-- Таблица 2: Работы и услуги -->
@@ -211,8 +219,14 @@
             {% endfor %}
         </tbody>
         <tfoot>
-            <tr class="total-row">
-                <td colspan="4" class="text-right">Итого к оплате:</td>
+            <!-- ДОБАВИЛИ ПОДЫТОГ ПО РАБОТАМ -->
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td colspan="4" class="text-right">Итого по работам:</td>
+                <td class="text-right">{{ works_subtotal|floatformat:2 }} ₽</td>
+            </tr>
+            <!-- ОБЩИЙ ИТОГ ОСТАВИЛИ СНИЗУ -->
+            <tr class="total-row" style="border-top: 2px solid #222;">
+                <td colspan="4" class="text-right">ВСЕГО К ОПЛАТЕ:</td>
                 <td class="text-right">{{ total|floatformat:2 }} ₽</td>
             </tr>
         </tfoot>

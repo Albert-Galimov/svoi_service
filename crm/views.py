@@ -182,13 +182,19 @@ def work_order_print(request, pk):
     parts_and_consumables = order.items.filter(category='part')
     works = order.items.filter(category='work')
     
-    # Считаем общий итог (по всем позициям)
-    total = sum(item.total_client_price for item in order.items.all())
+    # Считаем итоги по группам
+    parts_subtotal = sum(item.total_client_price for item in parts_and_consumables)
+    works_subtotal = sum(item.total_client_price for item in works)
+    
+    # Считаем общий итог
+    total = parts_subtotal + works_subtotal
 
     context = {
         "order": order,
         "parts_and_consumables": parts_and_consumables,
         "works": works,
+        "parts_subtotal": parts_subtotal, # <-- Добавили
+        "works_subtotal": works_subtotal, # <-- Добавили
         "total": total,
         "contacts": CONTACTS,
     }
