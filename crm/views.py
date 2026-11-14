@@ -8,7 +8,7 @@ from django.db.models import Sum, F
 from django.template.loader import render_to_string
 
 from public.models import Booking
-from .models import Client, Service, WorkOrder, WarehouseItem, Master, WorkOrderItem
+from .models import Client, Car, Service, WorkOrder, WarehouseItem, Master, WorkOrderItem
 from core.constants import PART_SUPPLIER_URLS, CONTACTS
 
 @login_required
@@ -198,27 +198,41 @@ def work_order_print(request, pk):
 @login_required
 @require_GET
 def car_notes_api(request):
-    """Возвращает HTML-блок с прошлыми заметками мастера для выбранного авто."""
+    """Возвращает HTML-блок с заметками + данные авто (пробег, VIN, номер)."""
     car_id = request.GET.get("car_id")
     exclude_id = request.GET.get("exclude_id")
 
-    if not car_id:
-        return JsonResponse({"html": ""})
+    empty = JsonResponse({
+        "html": "", "mileage": 0, "vin": "", "plate": "",
+    })
 
-    # Ищем заказы этой машины, где есть заметки
-    qs = WorkOrder.objects.filter(car_id=car_id).exclude(notes="").exclude(notes__isnull=True)
-    
-    # Если редактируем существующий заказ, исключаем его из списка "прошлых"
+    if not car_id:
+        return empty
+
+    try:
+        car = Car.objects.get(pk=car_id)
+    except Car.DoesNotExist:
+        return empty
+
+    qs = (
+        WorkOrder.objects
+        .filter(car_id=car_id)
+        .exclude(notes="")
+        .exclude(notes__isnull=True)
+    )
     if exclude_id:
         qs = qs.exclude(pk=exclude_id)
 
-    # Берем 5 последних
     previous_notes = qs.order_by("-created_at")[:5]
 
-    # Рендерим HTML через отдельный партиал-шаблон
     html = render_to_string(
-        "admin/crm/workorder/previous_notes_block.html", 
-        {"previous_notes": previous_notes}
+        "admin/crm/workorder/previous_notes_block.html",
+        {"previous_notes": previous_notes},
     )
 
-    return JsonResponse({"html": html})
+    return JsonResponse({
+        "html": html,
+        "mileage": car.mileage,
+        "vin": car.vin or "",
+        "plate": car.plate or "",
+    })
