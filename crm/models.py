@@ -16,10 +16,7 @@ from django.core.exceptions import ValidationError
 
 from core.fields import PhoneField
 from core.validators import validate_license_plate, validate_vin
-from core.constants import PAYMENT_METHODS, SERVICES
-
-# Формируем список вариантов для поля service
-SERVICE_CHOICES = [(code, data["name"]) for code, data in SERVICES.items()]
+from core.constants import PAYMENT_METHODS
 
 
 class Client(models.Model):
@@ -117,6 +114,38 @@ class Car(models.Model):
         if self.plate:
             return f"{base} [{self.plate}]"
         return base
+
+
+class Service(models.Model):
+    """Справочник услуг автосервиса.
+
+    Одна цена — сколько услуга стоит для клиента по умолчанию.
+    В конкретном заказ-наряде её можно изменить.
+    """
+
+    name = models.CharField("Название услуги",max_length=200)
+    price = models.DecimalField(
+        "Цена для клиента, ₽",
+        max_digits=10,
+        decimal_places=2,
+        help_text="Подставляется в заказ-наряд. В конкретном заказе её можно изменить.",
+    )
+    is_active = models.BooleanField(
+        "Активна", default=True,
+        help_text="Снимите галочку, если услугу больше не оказываете.",
+    )
+    ordering = models.PositiveIntegerField(
+        "Порядок", default=0,
+        help_text="Чем меньше число — тем выше услуга в списке.",
+    )
+
+    class Meta:
+        verbose_name = "Услуга"
+        verbose_name_plural = "Услуги"
+        ordering = ["ordering", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.price} ₽)"
 
 
 class WorkOrder(models.Model):
@@ -238,12 +267,14 @@ class WorkOrderItem(models.Model):
         choices=Category.choices,
         default=Category.PART
     )
-    service = models.CharField(
-        "Услуга из списка",
-        max_length=50,
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        choices=SERVICE_CHOICES,
-        help_text="Выберите, чтобы подставить название и цену."
+        related_name="work_order_items",
+        verbose_name="Услуга из справочника",
+        help_text="Выберите — название и цена подставятся. Оставьте пустым для своей услуги.",
     )
     article = models.CharField(
         "Артикул",
