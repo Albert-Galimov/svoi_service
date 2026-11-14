@@ -8,8 +8,8 @@ from django.db.models import Sum, F
 from django.template.loader import render_to_string
 
 from public.models import Booking
-from .models import Client, WorkOrder, WarehouseItem, Master, WorkOrderItem
-from core.constants import PART_SUPPLIER_URLS, CONTACTS, SERVICES
+from .models import Client, Service, WorkOrder, WarehouseItem, Master, WorkOrderItem
+from core.constants import PART_SUPPLIER_URLS, CONTACTS
 
 @login_required
 def dashboard_callback(request, context):
@@ -154,18 +154,23 @@ def part_lookup_api(request):
 @login_required
 @require_GET
 def service_lookup_api(request):
-    """Возвращает название и цену выбранной услуги из констант."""
-    service_code = request.GET.get("code")
-    if not service_code:
-        return JsonResponse({"name": "", "price": 0})
+    """Возвращает название и цену выбранной услуги из справочника.
 
-    service_data = SERVICES.get(service_code)
-    if service_data:
-        return JsonResponse({
-            "name": service_data["name"],
-            "price": str(service_data["price"])
-        })
-    return JsonResponse({"name": "", "price": 0})
+    Принимает ?id=<pk Service>. Отдаёт JSON: {"name": "...", "price": "..."}.
+    """
+    service_id = request.GET.get("id", "").strip()
+    if not service_id:
+        return JsonResponse({"name": "", "price": ""})
+
+    try:
+        service = Service.objects.get(pk=int(service_id))
+    except (Service.DoesNotExist, ValueError):
+        return JsonResponse({"name": "", "price": ""})
+
+    return JsonResponse({
+        "name": service.name,
+        "price": str(service.price),
+    })
 
 
 @login_required

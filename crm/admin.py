@@ -6,7 +6,7 @@ from django.forms.models import construct_instance # <-- Импортируем 
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import Car, Master, Client, WorkOrder, WorkOrderItem, WarehouseItem
+from .models import Car, Master, Client, Service, WorkOrder, WorkOrderItem, WarehouseItem
 
 
 # ==========================================
@@ -141,6 +141,7 @@ class WorkOrderPartInline(BaseWorkOrderItemInline):
     fields = ("article", "name", "quantity", "purchase_price", "client_price")
     verbose_name = "Запчасть"
     verbose_name_plural = "Запчасти и расходники"
+
     class Media:
         js = ("js/admin_parts.js",)
 
@@ -150,6 +151,8 @@ class WorkOrderWorkInline(BaseWorkOrderItemInline):
     fields = ("service", "name", "master", "quantity", "client_price")
     verbose_name = "Услуга"
     verbose_name_plural = "Работы и услуги"
+    autocomplete_fields = ("service",)
+
     class Media:
         js = ("js/admin_services.js",)
 
@@ -201,6 +204,33 @@ class MasterAdmin(unfold.admin.ModelAdmin):
     list_display = ("name", "is_active")
     search_fields = ("name",) # ДОБАВИЛИ ПОИСК ДЛЯ АВТОДОПОЛНЕНИЯ
     ordering = ("name",)
+
+
+@admin.register(Service)
+class ServiceAdmin(unfold.admin.ModelAdmin):
+    list_display = ("name", "price", "is_active", "ordering")
+    list_editable = ("price", "is_active", "ordering")
+    list_filter = ("is_active",)
+    search_fields = ("name",)
+    ordering = ("ordering", "name")
+
+    def get_search_results(self, request, queryset, search_term):
+        """Отсеиваем неактивные услуги из выпадашки автодополнения.
+
+        Но НЕ трогаем обычный поиск на странице «Услуги» — там брат должен
+        видеть в том числе неактивные, чтобы снова включить их галочкой.
+        """
+        qs, use_distinct = super().get_search_results(
+            request, queryset, search_term,
+        )
+
+        # Autocomplete URL заканчивается на /autocomplete/. Именно для него
+        # включаем фильтр. Для changelist (список услуг) и других страниц
+        # оставляем без фильтра.
+        if request.path.rstrip("/").endswith("/autocomplete"):
+            qs = qs.filter(is_active=True)
+
+        return qs, use_distinct
 
 
 class WorkOrderChangelistForm(forms.ModelForm):
