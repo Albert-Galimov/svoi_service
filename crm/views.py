@@ -1,31 +1,47 @@
 from datetime import date
 from decimal import Decimal  # <-- ДОБАВИЛИ ИМПОРТ
-from django.utils.dateparse import parse_date
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_GET
-from django.http import JsonResponse
-from django.db.models import Sum, F
-from django.template.loader import render_to_string
 
+from django.contrib.auth.decorators import login_required
+from django.db.models import F, Sum
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
+from django.utils.dateparse import parse_date
+from django.views.decorators.http import require_GET
+
+from core.constants import CONTACTS, PART_SUPPLIER_URLS
 from public.models import Booking
-from .models import Client, Car, Service, WorkOrder, WarehouseItem, Master, WorkOrderItem
-from core.constants import PART_SUPPLIER_URLS, CONTACTS
+
+from .models import (
+    Car,
+    Client,
+    Master,
+    Service,
+    WarehouseItem,
+    WorkOrder,
+    WorkOrderItem,
+)
+
 
 @login_required
 def dashboard_callback(request, context):
     """Собирает статистику для главной страницы админки."""
-    
+
     # --- 1. Базовые данные ---
-    context.update({
-        "total_clients": Client.objects.count(),
-        "new_bookings": Booking.objects.filter(status=Booking.Status.NEW).count(),
-        "active_orders": WorkOrder.objects.filter(
-            status__in=[WorkOrder.Status.WAITING_PARTS, WorkOrder.Status.WAITING_INSTALL]
-        ).count(),
-        "recent_bookings": Booking.objects.order_by("-created_at")[:5],
-        "masters": Master.objects.filter(is_active=True),
-    })
+    context.update(
+        {
+            "total_clients": Client.objects.count(),
+            "new_bookings": Booking.objects.filter(status=Booking.Status.NEW).count(),
+            "active_orders": WorkOrder.objects.filter(
+                status__in=[
+                    WorkOrder.Status.WAITING_PARTS,
+                    WorkOrder.Status.WAITING_INSTALL,
+                ]
+            ).count(),
+            "recent_bookings": Booking.objects.order_by("-created_at")[:5],
+            "masters": Master.objects.filter(is_active=True),
+        }
+    )
 
     # --- 2. Финансовая статистика ---
     today = date.today()
@@ -44,49 +60,55 @@ def dashboard_callback(request, context):
     else:
         end_date = today
 
-    context.update({
-        "start_date": start_date,
-        "end_date": end_date,
-        "selected_master_id": int(master_id) if master_id else None,
-    })
+    context.update(
+        {
+            "start_date": start_date,
+            "end_date": end_date,
+            "selected_master_id": int(master_id) if master_id else None,
+        }
+    )
 
     # Берем заказы за выбранный период, исключая отмененные
     orders_in_period = WorkOrder.objects.filter(
-        created_at__date__gte=start_date,
-        created_at__date__lte=end_date
-    ).exclude(status='canceled')
+        created_at__date__gte=start_date, created_at__date__lte=end_date
+    ).exclude(status="canceled")
 
     # Берем все позиции из этих заказов
     items_in_period = WorkOrderItem.objects.filter(work_order__in=orders_in_period)
 
     # Выражение для подсчета суммы: цена * количество
-    revenue_expr = Sum(F('client_price') * F('quantity'))
+    revenue_expr = Sum(F("client_price") * F("quantity"))
 
     # Считаем выручку по категориям
-    parts_revenue = items_in_period.filter(category='part').aggregate(total=revenue_expr)['total'] or Decimal('0')
-    services_revenue = items_in_period.filter(category='work').aggregate(total=revenue_expr)['total'] or Decimal('0')
+    parts_revenue = items_in_period.filter(category="part").aggregate(
+        total=revenue_expr
+    )["total"] or Decimal("0")
+    services_revenue = items_in_period.filter(category="work").aggregate(
+        total=revenue_expr
+    )["total"] or Decimal("0")
 
     # Считаем общую ЗП мастеров (50% от выполненных работ)
     # ИСПРАВЛЕНО: умножаем на Decimal('0.5'), а не на float 0.5
-    total_salary = services_revenue * Decimal('0.5')
+    total_salary = services_revenue * Decimal("0.5")
 
-    context.update({
-        "parts_revenue": parts_revenue,
-        "services_revenue": services_revenue,
-        "total_revenue": parts_revenue + services_revenue,
-        "total_salary": total_salary,
-    })
+    context.update(
+        {
+            "parts_revenue": parts_revenue,
+            "services_revenue": services_revenue,
+            "total_revenue": parts_revenue + services_revenue,
+            "total_salary": total_salary,
+        }
+    )
 
     # Считаем выручку и ЗП конкретного мастера (только за работы)
     if master_id:
         master_revenue = items_in_period.filter(
-            category='work', 
-            master_id=master_id
-        ).aggregate(total=revenue_expr)['total'] or Decimal('0')
-        
+            category="work", master_id=master_id
+        ).aggregate(total=revenue_expr)["total"] or Decimal("0")
+
         context["master_revenue"] = master_revenue
         # ИСПРАВЛЕНО: умножаем на Decimal('0.5')
-        context["master_salary"] = master_revenue * Decimal('0.5')
+        context["master_salary"] = master_revenue * Decimal("0.5")
 
     return context
 
@@ -99,7 +121,13 @@ def part_lookup_api(request):
 
     if not article:
         return JsonResponse(
-            {"article": "", "suppliers": [], "stock": 0, "name": "", "purchase_price": ""}
+            {
+                "article": "",
+                "suppliers": [],
+                "stock": 0,
+                "name": "",
+                "purchase_price": "",
+            }
         )
 
     stock_data = WarehouseItem.objects.filter(
@@ -108,14 +136,12 @@ def part_lookup_api(request):
     stock = stock_data["total"] or 0
 
     item_with_stock = (
-        WarehouseItem.objects
-        .filter(article__iexact=article, quantity__gt=0)
+        WarehouseItem.objects.filter(article__iexact=article, quantity__gt=0)
         .order_by("-updated_at")
         .first()
     )
     item_any = (
-        WarehouseItem.objects
-        .filter(article__iexact=article)
+        WarehouseItem.objects.filter(article__iexact=article)
         .order_by("-updated_at")
         .first()
     )
@@ -137,13 +163,15 @@ def part_lookup_api(request):
         for supplier_name, url_template in PART_SUPPLIER_URLS.items()
     ]
 
-    return JsonResponse({
-        "article": article,
-        "suppliers": suppliers,
-        "stock": stock,
-        "name": name,
-        "purchase_price": purchase_price,
-    })
+    return JsonResponse(
+        {
+            "article": article,
+            "suppliers": suppliers,
+            "stock": stock,
+            "name": name,
+            "purchase_price": purchase_price,
+        }
+    )
 
 
 @login_required
@@ -159,20 +187,22 @@ def service_lookup_api(request):
     except (Service.DoesNotExist, ValueError):
         return JsonResponse({"name": "", "price": ""})
 
-    return JsonResponse({
-        "name": service.name,
-        "price": str(service.price),
-    })
+    return JsonResponse(
+        {
+            "name": service.name,
+            "price": str(service.price),
+        }
+    )
 
 
 @login_required
 def work_order_print(request, pk):
     """Страница печати прайса для клиента."""
     order = get_object_or_404(WorkOrder, pk=pk)
-    
-    parts_and_consumables = order.items.filter(category='part')
-    works = order.items.filter(category='work')
-    
+
+    parts_and_consumables = order.items.filter(category="part")
+    works = order.items.filter(category="work")
+
     parts_subtotal = sum(item.total_client_price for item in parts_and_consumables)
     works_subtotal = sum(item.total_client_price for item in works)
     total = parts_subtotal + works_subtotal
@@ -197,9 +227,15 @@ def car_notes_api(request):
     exclude_id = request.GET.get("exclude_id")
 
     # Добавили year в пустой ответ
-    empty = JsonResponse({
-        "html": "", "mileage": 0, "vin": "", "plate": "", "year": "",
-    })
+    empty = JsonResponse(
+        {
+            "html": "",
+            "mileage": 0,
+            "vin": "",
+            "plate": "",
+            "year": "",
+        }
+    )
 
     if not car_id:
         return empty
@@ -210,8 +246,7 @@ def car_notes_api(request):
         return empty
 
     qs = (
-        WorkOrder.objects
-        .filter(car_id=car_id)
+        WorkOrder.objects.filter(car_id=car_id)
         .exclude(notes="")
         .exclude(notes__isnull=True)
     )
@@ -225,10 +260,12 @@ def car_notes_api(request):
         {"previous_notes": previous_notes},
     )
 
-    return JsonResponse({
-        "html": html,
-        "mileage": car.mileage,
-        "vin": car.vin or "",
-        "plate": car.plate or "",
-        "year": car.year or "", # <--- ВОТ ЭТА СТРОКА БЫЛА ПРОПУЩЕНА
-    })
+    return JsonResponse(
+        {
+            "html": html,
+            "mileage": car.mileage,
+            "vin": car.vin or "",
+            "plate": car.plate or "",
+            "year": car.year or "",  # <--- ВОТ ЭТА СТРОКА БЫЛА ПРОПУЩЕНА
+        }
+    )

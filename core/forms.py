@@ -10,15 +10,19 @@ class BookingForm(forms.ModelForm):
         model = Booking
         fields = ["name", "phone"]
         widgets = {
-            "name": forms.TextInput(attrs={
-                "placeholder": "Как к вам обращаться",
-                "autocomplete": "name",
-            }),
-            "phone": forms.TextInput(attrs={
-                "placeholder": "+7 (___) ___-__-__",
-                "autocomplete": "tel",
-                "inputmode": "tel",
-            }),
+            "name": forms.TextInput(
+                attrs={
+                    "placeholder": "Как к вам обращаться",
+                    "autocomplete": "name",
+                }
+            ),
+            "phone": forms.TextInput(
+                attrs={
+                    "placeholder": "+7 (___) ___-__-__",
+                    "autocomplete": "tel",
+                    "inputmode": "tel",
+                }
+            ),
         }
 
     def clean_name(self):

@@ -2,7 +2,6 @@ import re
 
 from django.core.exceptions import ValidationError
 
-
 # Всё, что не цифра, — выкидываем при нормализации.
 _NON_DIGIT_RE = re.compile(r"\D+")
 
@@ -35,14 +34,13 @@ def validate_russian_phone(value: str) -> None:
 
     if not re.fullmatch(r"\+7\d{10}", normalized):
         raise ValidationError(
-            "Введите российский номер: +7 и 10 цифр. "
-            "Пример: +7 917 123-45-67."
+            "Введите российский номер: +7 и 10 цифр. " "Пример: +7 917 123-45-67."
         )
 
 
 def validate_license_plate(value: str) -> None:
     """Проверяет российский госномер.
-    
+
     Примеры: А123ВС77, В777АА116, Е001КХ777.
     Допускаются кириллические буквы, цифры и пробелы.
     """
@@ -52,14 +50,12 @@ def validate_license_plate(value: str) -> None:
     value = re.sub(r"\s+", "", value).upper()
     # Регулярка для российских номеров (тип 1 и тип 1А)
     if not re.fullmatch(r"[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}\d{2,3}", value):
-        raise ValidationError(
-            "Некорректный госномер. Пример: А123ВС77 или А123ВС777."
-        )
+        raise ValidationError("Некорректный госномер. Пример: А123ВС77 или А123ВС777.")
 
 
 def validate_vin(value: str) -> None:
     """Проверяет VIN на соответствие стандарту.
-    
+
     VIN состоит ровно из 17 символов (латиница и цифры).
     Буквы I, O, Q не используются, чтобы не путать с 1 и 0.
     """

@@ -31,8 +31,7 @@ def booking_create(request):
             notify_about_booking(booking)
         except Exception:
             logger.exception(
-                "Неожиданная ошибка при отправке уведомления в ВК "
-                "о заявке id=%s",
+                "Неожиданная ошибка при отправке уведомления в ВК " "о заявке id=%s",
                 booking.pk,
             )
 

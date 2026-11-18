@@ -1,11 +1,12 @@
-import unfold
-
 from django.contrib import admin
 from django.contrib.auth.models import Group
+
+import unfold
 
 from .models import Booking
 
 admin.site.unregister(Group)
+
 
 @admin.register(Booking)
 class BookingAdmin(unfold.admin.ModelAdmin):
@@ -18,14 +19,13 @@ class BookingAdmin(unfold.admin.ModelAdmin):
     ordering = ("-created_at",)
 
     fieldsets = (
-        ("Клиент", {
-            "fields": ("name", "phone")
-        }),
-        ("Работа владельца", {
-            "fields": ("status", "notes", "processed_at")
-        }),
-        ("Служебное", {
-            "fields": ("created_at",),
-            "classes": ("collapse",),
-        }),
+        ("Клиент", {"fields": ("name", "phone")}),
+        ("Работа владельца", {"fields": ("status", "notes", "processed_at")}),
+        (
+            "Служебное",
+            {
+                "fields": ("created_at",),
+                "classes": ("collapse",),
+            },
+        ),
     )

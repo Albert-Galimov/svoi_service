@@ -19,9 +19,9 @@ from django.db import transaction
 
 from crm.models import Car, Client
 
-
 FILE_MARKER_RE = re.compile(
-    r"^###\s+ФАЙЛ:\s+(.+?)\.txt\s+\(.*?\)\s*$", re.MULTILINE,
+    r"^###\s+ФАЙЛ:\s+(.+?)\.txt\s+\(.*?\)\s*$",
+    re.MULTILINE,
 )
 VIN_RE = re.compile(r"\b([A-HJ-NPR-Z0-9]{17})\b")
 PLATE_RE = re.compile(
@@ -40,16 +40,49 @@ FAKE_NOTE = (
 )
 
 _NOT_NAMES = {
-    "тел", "телефон", "моб", "смс", "звонить", "звонок", "номер", "контакт",
-    "мастер", "клиент", "клиента", "заказ", "заявка", "авто", "автосервис",
-    "оплата", "предоплата", "долг", "остаток", "скидка", "итого",
-    "работа", "работы", "запчасти", "масло", "акпп", "кпп", "мкпп",
-    "двигатель", "ремонт", "пробег", "адрес", "вацап", "вотсап", "ватсап",
-    "whatsapp", "telegram", "телеграм",
+    "тел",
+    "телефон",
+    "моб",
+    "смс",
+    "звонить",
+    "звонок",
+    "номер",
+    "контакт",
+    "мастер",
+    "клиент",
+    "клиента",
+    "заказ",
+    "заявка",
+    "авто",
+    "автосервис",
+    "оплата",
+    "предоплата",
+    "долг",
+    "остаток",
+    "скидка",
+    "итого",
+    "работа",
+    "работы",
+    "запчасти",
+    "масло",
+    "акпп",
+    "кпп",
+    "мкпп",
+    "двигатель",
+    "ремонт",
+    "пробег",
+    "адрес",
+    "вацап",
+    "вотсап",
+    "ватсап",
+    "whatsapp",
+    "telegram",
+    "телеграм",
 }
 
 
 # ---------- парсинг ----------
+
 
 def parse_filename(name: str):
     """Возвращает (brand, model, plate, tail).
@@ -68,7 +101,7 @@ def parse_filename(name: str):
     if m:
         plate = m.group(0).upper()
         before = name[: m.start()].strip(" -—,")
-        after = name[m.end():].strip(" -—,")
+        after = name[m.end() :].strip(" -—,")
         parts = before.split(None, 1)
         brand = parts[0] if parts else "Неизвестно"
         model = parts[1] if len(parts) > 1 else "—"
@@ -134,7 +167,10 @@ def name_from_tail(tail: str) -> str:
     if not tail:
         return ""
     tail = re.sub(
-        r"^(от|у|для|клиент[а-я]*|мастер[а-я]*)\s+", "", tail, flags=re.I,
+        r"^(от|у|для|клиент[а-я]*|мастер[а-я]*)\s+",
+        "",
+        tail,
+        flags=re.I,
     )
     words = re.findall(r"[А-ЯЁ][а-яё\-]+", tail)
     picked = [w for w in words if _is_name_word(w)]
@@ -149,15 +185,16 @@ def strip_decorative_noise(body: str) -> str:
 
 # ---------- клиенты ----------
 
+
 def _next_fake_phone() -> str:
-    used = Client.objects.filter(
-        phone__startswith=FAKE_PREFIX
-    ).values_list("phone", flat=True)
+    used = Client.objects.filter(phone__startswith=FAKE_PREFIX).values_list(
+        "phone", flat=True
+    )
 
     max_n = 0
     for p in used:
         try:
-            n = int(p[len(FAKE_PREFIX):])
+            n = int(p[len(FAKE_PREFIX) :])
         except (ValueError, TypeError):
             continue
         if n > max_n:
@@ -201,13 +238,15 @@ def _make_fake_client(brand, model, base_name) -> Client:
 
 # ---------- команда ----------
 
+
 class Command(BaseCommand):
     help = "Импорт старых записей из merged.txt (каждая машина = свой клиент)"
 
     def add_arguments(self, parser):
         parser.add_argument("file", help="Путь к merged.txt")
         parser.add_argument(
-            "--dry-run", action="store_true",
+            "--dry-run",
+            action="store_true",
             help="Только показать план, без записи в БД",
         )
 
@@ -220,9 +259,11 @@ class Command(BaseCommand):
         text = path.read_text(encoding="utf-8")
         matches = list(FILE_MARKER_RE.finditer(text))
         if not matches:
-            self.stderr.write(self.style.ERROR(
-                "Не найдено блоков «### ФАЙЛ:». Проверь, что это merged.txt."
-            ))
+            self.stderr.write(
+                self.style.ERROR(
+                    "Не найдено блоков «### ФАЙЛ:». Проверь, что это merged.txt."
+                )
+            )
             return
 
         dry = options["dry_run"]
@@ -248,13 +289,18 @@ class Command(BaseCommand):
             if not name:
                 name = name_from_tail(tail)
 
-            rows.append({
-                "file_name": file_name,
-                "brand": brand, "model": model,
-                "plate": plate, "vin": vin,
-                "phone": phone, "name": name,
-                "body": body,
-            })
+            rows.append(
+                {
+                    "file_name": file_name,
+                    "brand": brand,
+                    "model": model,
+                    "plate": plate,
+                    "vin": vin,
+                    "phone": phone,
+                    "name": name,
+                    "body": body,
+                }
+            )
 
         with_phone = [r for r in rows if r["phone"]]
         with_name_only = [r for r in rows if not r["phone"] and r["name"]]
@@ -270,9 +316,11 @@ class Command(BaseCommand):
 
         if dry:
             self.stdout.write("")
-            self.stdout.write(self.style.WARNING(
-                f"=== РЕАЛЬНЫЕ КЛИЕНТЫ (первые 20 из {len(with_phone)}) ==="
-            ))
+            self.stdout.write(
+                self.style.WARNING(
+                    f"=== РЕАЛЬНЫЕ КЛИЕНТЫ (первые 20 из {len(with_phone)}) ==="
+                )
+            )
             for r in with_phone[:20]:
                 self.stdout.write(
                     f"  · {r['phone']:<13} {r['name'] or '(без имени)':<38} "
@@ -282,9 +330,11 @@ class Command(BaseCommand):
                 self.stdout.write(f"  … и ещё {len(with_phone) - 20}")
 
             self.stdout.write("")
-            self.stdout.write(self.style.WARNING(
-                f"=== АРХИВНЫЕ С ИМЕНЕМ (первые 20 из {len(with_name_only)}) ==="
-            ))
+            self.stdout.write(
+                self.style.WARNING(
+                    f"=== АРХИВНЫЕ С ИМЕНЕМ (первые 20 из {len(with_name_only)}) ==="
+                )
+            )
             for r in with_name_only[:20]:
                 display = _fake_client_name(r["brand"], r["model"], r["name"])
                 self.stdout.write(f"  · {display:<50} ← {r['file_name']}")
@@ -292,9 +342,11 @@ class Command(BaseCommand):
                 self.stdout.write(f"  … и ещё {len(with_name_only) - 20}")
 
             self.stdout.write("")
-            self.stdout.write(self.style.WARNING(
-                f"=== АРХИВНЫЕ БЕЗ ИМЕНИ (первые 10 из {len(without_any)}) ==="
-            ))
+            self.stdout.write(
+                self.style.WARNING(
+                    f"=== АРХИВНЫЕ БЕЗ ИМЕНИ (первые 10 из {len(without_any)}) ==="
+                )
+            )
             for r in without_any[:10]:
                 display = _fake_client_name(r["brand"], r["model"], "")
                 self.stdout.write(f"  · {display:<50} ← {r['file_name']}")
@@ -303,9 +355,11 @@ class Command(BaseCommand):
 
             if skipped_no_id:
                 self.stdout.write("")
-                self.stdout.write(self.style.WARNING(
-                    f"=== ПРОПУЩЕНО ({len(skipped_no_id)} файлов) ==="
-                ))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"=== ПРОПУЩЕНО ({len(skipped_no_id)} файлов) ==="
+                    )
+                )
                 for n in skipped_no_id:
                     self.stdout.write(f"  · {n}")
             return
@@ -334,7 +388,9 @@ class Command(BaseCommand):
                         clients_real_reused += 1
                 else:
                     client = _make_fake_client(
-                        r["brand"], r["model"], r["name"],
+                        r["brand"],
+                        r["model"],
+                        r["name"],
                     )
                     clients_fake_created += 1
 
@@ -356,16 +412,21 @@ class Command(BaseCommand):
                     notes = f"Исходный файл: {r['file_name']}.txt\n\n{r['body']}"
                     Car.objects.create(
                         client=client,
-                        brand=r["brand"], model=r["model"],
-                        plate=r["plate"], vin=r["vin"],
-                        mileage=0, notes=notes,
+                        brand=r["brand"],
+                        model=r["model"],
+                        plate=r["plate"],
+                        vin=r["vin"],
+                        mileage=0,
+                        notes=notes,
                     )
                     cars_created += 1
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Готово. "
-            f"Реальных клиентов создано: {clients_real_created}, "
-            f"привязано к существующим: {clients_real_reused}. "
-            f"Архивных клиентов создано: {clients_fake_created}. "
-            f"Машин создано: {cars_created}, обновлено: {cars_updated}."
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Готово. "
+                f"Реальных клиентов создано: {clients_real_created}, "
+                f"привязано к существующим: {clients_real_reused}. "
+                f"Архивных клиентов создано: {clients_fake_created}. "
+                f"Машин создано: {cars_created}, обновлено: {cars_updated}."
+            )
+        )

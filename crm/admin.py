@@ -1,27 +1,45 @@
-import unfold
-
 from django import forms
 from django.contrib import admin
-from django.forms.models import construct_instance# <-- Импортируем функцию для обновления объекта
 from django.db.models import Q
+from django.forms.models import (
+    construct_instance,  # <-- Импортируем функцию для обновления объекта
+)
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
-from .models import Car, Master, Client, Service, WorkOrder, WorkOrderItem, WarehouseItem
+import unfold
 
+from .models import (
+    Car,
+    Client,
+    Master,
+    Service,
+    WarehouseItem,
+    WorkOrder,
+    WorkOrderItem,
+)
 
 # ==========================================
 # INLINES (Отображение связей внутри карточек)
 # ==========================================
 
+
 class CarInline(unfold.admin.TabularInline):
     """Показывает машины внутри карточки клиента (только чтение, в виде таблицы)."""
+
     model = Car
     extra = 0
-    fields = ("brand_link", "model_link", "year_link", "plate_link", "vin_link", "mileage_link")
+    fields = (
+        "brand_link",
+        "model_link",
+        "year_link",
+        "plate_link",
+        "vin_link",
+        "mileage_link",
+    )
     readonly_fields = fields
-    show_change_link = False 
+    show_change_link = False
     can_delete = False
     ordering = ("brand", "model")
 
@@ -36,8 +54,9 @@ class CarInline(unfold.admin.TabularInline):
             return text
         url = reverse("admin:crm_car_change", args=[obj.pk])
         return format_html(
-            '<a href="{}" style="display: block; width: 100%; height: 100%;">{}</a>', 
-            url, text
+            '<a href="{}" style="display: block; width: 100%; height: 100%;">{}</a>',
+            url,
+            text,
         )
 
     @admin.display(description="Марка")
@@ -67,6 +86,7 @@ class CarInline(unfold.admin.TabularInline):
 
 class WorkOrderInline(unfold.admin.TabularInline):
     """Показывает заказ-наряды внутри карточки автомобиля (только чтение)."""
+
     model = WorkOrder
     extra = 0
     fields = ("id_link", "status_link", "created_at_link", "description_link")
@@ -86,8 +106,9 @@ class WorkOrderInline(unfold.admin.TabularInline):
             return text
         url = reverse("admin:crm_workorder_change", args=[obj.pk])
         return format_html(
-            '<a href="{}" style="display: block; width: 100%; height: 100%;">{}</a>', 
-            url, text
+            '<a href="{}" style="display: block; width: 100%; height: 100%;">{}</a>',
+            url,
+            text,
         )
 
     @admin.display(description="Заказ", ordering="id")
@@ -167,6 +188,7 @@ class WorkOrderWorkInline(BaseWorkOrderItemInline):
 # АДМИНКИ МОДЕЛЕЙ
 # ==========================================
 
+
 @admin.register(Client)
 class ClientAdmin(unfold.admin.ModelAdmin):
     list_display = ("name", "phone", "created_at")
@@ -180,7 +202,10 @@ class ClientAdmin(unfold.admin.ModelAdmin):
     fieldsets = (
         ("Клиент", {"fields": ("name", "phone")}),
         ("Дополнительно", {"fields": ("notes",)}),
-        ("Служебное", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+        (
+            "Служебное",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
     )
 
 
@@ -190,8 +215,13 @@ class CarAdmin(unfold.admin.ModelAdmin):
     list_display_links = ("__str__", "client", "vin", "year", "plate", "mileage")
     list_filter = ("brand",)
     search_fields = (
-        "plate", "vin", "year", "brand", "model",
-        "client__name", "client__phone",
+        "plate",
+        "vin",
+        "year",
+        "brand",
+        "model",
+        "client__name",
+        "client__phone",
     )
     autocomplete_fields = ("client",)
     readonly_fields = ("created_at", "updated_at")
@@ -199,9 +229,15 @@ class CarAdmin(unfold.admin.ModelAdmin):
 
     fieldsets = (
         ("Владелец", {"fields": ("client",)}),
-        ("Автомобиль", {"fields": ("brand", "model", "year", "plate", "vin", "mileage")}),
+        (
+            "Автомобиль",
+            {"fields": ("brand", "model", "year", "plate", "vin", "mileage")},
+        ),
         ("Дополнительно", {"fields": ("notes",)}),
-        ("Служебное", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+        (
+            "Служебное",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
     )
 
 
@@ -223,11 +259,15 @@ class MasterAdmin(unfold.admin.ModelAdmin):
     def master_work_orders(self, obj):
         if not obj or not obj.pk:
             return "—"
-        
-        orders = WorkOrder.objects.filter(
-            Q(master=obj) | Q(items__master=obj, items__category='work')
-        ).distinct().order_by("-created_at")
-        
+
+        orders = (
+            WorkOrder.objects.filter(
+                Q(master=obj) | Q(items__master=obj, items__category="work")
+            )
+            .distinct()
+            .order_by("-created_at")
+        )
+
         if not orders:
             return "У этого мастера пока нет заказов."
 
@@ -283,46 +323,53 @@ class MasterAdmin(unfold.admin.ModelAdmin):
         """
 
         # Генерируем таблицу, добавили ID обертке, чтобы CSS точно его нашел
-        html = css + '<div id="master-orders-wrapper" style="width: 100% !important; display: block; overflow-x: auto;">'
+        html = (
+            css
+            + '<div id="master-orders-wrapper" style="width: 100% !important; display: block; overflow-x: auto;">'
+        )
         html += '<table class="master-orders-table">'
-        html += '<thead><tr>'
-        html += '<th>Заказ</th>'
-        html += '<th>Автомобиль</th>'
-        html += '<th>Статус</th>'
-        html += '<th>Дата</th>'
-        html += '<th>Роль</th>'
+        html += "<thead><tr>"
+        html += "<th>Заказ</th>"
+        html += "<th>Автомобиль</th>"
+        html += "<th>Статус</th>"
+        html += "<th>Дата</th>"
+        html += "<th>Роль</th>"
         html += '<th style="width: auto;">Выполненные услуги</th>'
-        html += '</tr></thead><tbody>'
-        
+        html += "</tr></thead><tbody>"
+
         for order in orders:
             order_url = reverse("admin:crm_workorder_change", args=[order.pk])
             car_url = reverse("admin:crm_car_change", args=[order.car.pk])
-            
+
             if order.master_id == obj.id:
                 role = '<span style="color: #0284c7; font-weight: 600;">Основной</span>'
-                items = order.items.filter(category='work')
+                items = order.items.filter(category="work")
                 if items.exists():
-                    services = "Все: " + ", ".join([f"{item.name} (x{item.quantity})" for item in items])
+                    services = "Все: " + ", ".join(
+                        [f"{item.name} (x{item.quantity})" for item in items]
+                    )
                 else:
                     services = "Все (работ нет)"
             else:
                 role = '<span style="color: #10b981; font-weight: 600;">Выполнял услуги</span>'
-                items = order.items.filter(master=obj, category='work')
+                items = order.items.filter(master=obj, category="work")
                 if items.exists():
-                    services = "Частично: " + ", ".join([f"{item.name} (x{item.quantity})" for item in items])
+                    services = "Частично: " + ", ".join(
+                        [f"{item.name} (x{item.quantity})" for item in items]
+                    )
                 else:
                     services = "— (не найдено)"
-            
-            html += f'<tr>'
+
+            html += f"<tr>"
             html += f'<td><a href="{order_url}" style="color:#e87722; font-weight:bold; text-decoration:none;">№{order.pk}</a></td>'
             html += f'<td><a href="{order_url}" style="color:#4b5563; text-decoration:none;">{order.car}</a></td>'
             html += f'<td style="color:#4b5563;">{order.get_status_display()}</td>'
             html += f'<td style="color:#4b5563;">{order.created_at.strftime("%d.%m.%Y %H:%M")}</td>'
-            html += f'<td>{role}</td>'
+            html += f"<td>{role}</td>"
             html += f'<td style="color:#4b5563;">{services}</td>'
-            html += f'</tr>'
-        
-        html += '</tbody></table></div>'
+            html += f"</tr>"
+
+        html += "</tbody></table></div>"
         return mark_safe(html)
 
 
@@ -341,7 +388,9 @@ class ServiceAdmin(unfold.admin.ModelAdmin):
         видеть в том числе неактивные, чтобы снова включить их галочкой.
         """
         qs, use_distinct = super().get_search_results(
-            request, queryset, search_term,
+            request,
+            queryset,
+            search_term,
         )
 
         # Autocomplete URL заканчивается на /autocomplete/. Именно для него
@@ -361,24 +410,37 @@ class WorkOrderChangelistForm(forms.ModelForm):
     def _post_clean(self):
         """Обновляем объект, но пропускаем вызов Model.clean() (валидацию пробега)."""
         # Эта строка применяет изменения из формы к объекту (в т.ч. новый статус)
-        self.instance = construct_instance(self, self.instance, self._meta.fields, self._meta.exclude)
-        # Мы намеренно не вызываем self.instance.full_clean(), 
+        self.instance = construct_instance(
+            self, self.instance, self._meta.fields, self._meta.exclude
+        )
+        # Мы намеренно не вызываем self.instance.full_clean(),
         # чтобы Django не проверял пробег при смене статуса в списке.
 
 
 @admin.register(WorkOrder)
 class WorkOrderAdmin(unfold.admin.ModelAdmin):
-    list_display = ("car", "master", "status", "created_at", "issued_at", "print_button")
+    list_display = (
+        "car",
+        "master",
+        "status",
+        "created_at",
+        "issued_at",
+        "print_button",
+    )
     list_display_links = ("car", "master", "created_at", "issued_at")
     list_filter = ("status", "master", "created_at")
     list_editable = ("status",)
     search_fields = (
-        "car__plate", "car__vin", "car__brand", "car__model",
-        "car__client__name", "car__client__phone",
+        "car__plate",
+        "car__vin",
+        "car__brand",
+        "car__model",
+        "car__client__name",
+        "car__client__phone",
         "description",
     )
     # ДОБАВИЛИ "master" СЮДА
-    autocomplete_fields = ("car", "master") 
+    autocomplete_fields = ("car", "master")
     readonly_fields = ("created_at", "updated_at")
     date_hierarchy = "created_at"
     inlines = [WorkOrderPartInline, WorkOrderWorkInline]
@@ -388,7 +450,13 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
         ("Автомобиль", {"fields": ("car", "mileage")}),
         ("Исполнение", {"fields": ("master", "payment_method")}),
         ("Работа", {"fields": ("status", "description", "notes")}),
-        ("Сроки", {"fields": ("issued_at", "created_at", "updated_at"), "classes": ("collapse",)}),
+        (
+            "Сроки",
+            {
+                "fields": ("issued_at", "created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     class Media:
@@ -401,11 +469,11 @@ class WorkOrderAdmin(unfold.admin.ModelAdmin):
         if obj.pk:
             url = reverse("crm:work_order_print", args=[obj.pk])
             return format_html(
-                '<a class="button" href="{}" target="_blank" style="background-color: #e87722; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-weight: bold;">🖨️ Печать</a>', 
-                url
+                '<a class="button" href="{}" target="_blank" style="background-color: #e87722; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-weight: bold;">🖨️ Печать</a>',
+                url,
             )
         return "—"
-    
+
     print_button.short_description = "Прайс"
 
 
@@ -416,16 +484,18 @@ class WarehouseItemAdmin(unfold.admin.ModelAdmin):
     list_editable = ("quantity", "purchase_price")
     ordering = ("-updated_at",)
     readonly_fields = ("created_at", "updated_at")
-    
+
     fieldsets = (
-        ("Информация о запчасти", {
-            "fields": ("article", "name", "quantity", "purchase_price")
-        }),
-        ("Дополнительно", {
-            "fields": ("note",)
-        }),
-        ("Служебное", {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",),
-        }),
+        (
+            "Информация о запчасти",
+            {"fields": ("article", "name", "quantity", "purchase_price")},
+        ),
+        ("Дополнительно", {"fields": ("note",)}),
+        (
+            "Служебное",
+            {
+                "fields": ("created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )

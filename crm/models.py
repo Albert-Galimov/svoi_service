@@ -10,13 +10,13 @@
 Клиент из заказ-наряда достаётся через `order.car.client`.
 """
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from django.core.exceptions import ValidationError
 
+from core.constants import PAYMENT_METHODS
 from core.fields import PhoneField
 from core.validators import validate_license_plate, validate_vin
-from core.constants import PAYMENT_METHODS
 
 
 class Client(models.Model):
@@ -51,8 +51,9 @@ class Master(models.Model):
 
     name = models.CharField("ФИО", max_length=150)
     is_active = models.BooleanField(
-        "Работает", default=True,
-        help_text="Снимите галочку, если мастер уволился (скроется из выбора)."
+        "Работает",
+        default=True,
+        help_text="Снимите галочку, если мастер уволился (скроется из выбора).",
     )
     notes = models.TextField("Заметки", blank=True)
     created_at = models.DateTimeField("Создан", auto_now_add=True)
@@ -85,27 +86,20 @@ class Car(models.Model):
     brand = models.CharField("Марка", max_length=50)
     model = models.CharField("Модель", max_length=50)
     year = models.PositiveSmallIntegerField(
-        "Год выпуска", 
-        null=True, 
+        "Год выпуска",
+        null=True,
         blank=True,
     )
     plate = models.CharField(
-        "Госномер", max_length=20, db_index=True,
-        validators=[validate_license_plate]
+        "Госномер", max_length=20, db_index=True, validators=[validate_license_plate]
     )
     vin = models.CharField(
-        "VIN", max_length=17, db_index=True,
-        validators=[validate_vin]
+        "VIN", max_length=17, db_index=True, validators=[validate_vin]
     )
     mileage = models.PositiveIntegerField(
-        "Пробег, км",
-        help_text="Последнее известное значение. Уточняется при визите."
+        "Пробег, км", help_text="Последнее известное значение. Уточняется при визите."
     )
-    notes = models.TextField(
-        "Заметка",
-        blank=True,
-        help_text="Видно только в CRM."
-    )
+    notes = models.TextField("Заметка", blank=True, help_text="Видно только в CRM.")
     created_at = models.DateTimeField("Создан", auto_now_add=True)
     updated_at = models.DateTimeField("Обновлён", auto_now=True)
 
@@ -128,7 +122,7 @@ class Service(models.Model):
     В конкретном заказ-наряде её можно изменить.
     """
 
-    name = models.CharField("Название услуги",max_length=200)
+    name = models.CharField("Название услуги", max_length=200)
     price = models.DecimalField(
         "Цена для клиента, ₽",
         max_digits=10,
@@ -136,11 +130,13 @@ class Service(models.Model):
         help_text="Подставляется в заказ-наряд. В конкретном заказе её можно изменить.",
     )
     is_active = models.BooleanField(
-        "Активна", default=True,
+        "Активна",
+        default=True,
         help_text="Снимите галочку, если услугу больше не оказываете.",
     )
     ordering = models.PositiveIntegerField(
-        "Порядок", default=0,
+        "Порядок",
+        default=0,
         help_text="Чем меньше число — тем выше услуга в списке.",
     )
 
@@ -171,7 +167,7 @@ class WorkOrder(models.Model):
     )
     mileage = models.PositiveIntegerField(
         "Пробег при приемке, км",
-        help_text="Не может быть меньше текущего пробега автомобиля."
+        help_text="Не может быть меньше текущего пробега автомобиля.",
     )
     master = models.ForeignKey(
         Master,
@@ -186,10 +182,7 @@ class WorkOrder(models.Model):
         default=Status.CREATED,
     )
     payment_method = models.CharField(
-        "Способ оплаты",
-        max_length=20,
-        choices=PAYMENT_METHODS,
-        default="none"
+        "Способ оплаты", max_length=20, choices=PAYMENT_METHODS, default="none"
     )
     description = models.TextField(
         "Что нужно сделать",
@@ -203,7 +196,8 @@ class WorkOrder(models.Model):
     updated_at = models.DateTimeField("Обновлён", auto_now=True)
     issued_at = models.DateTimeField(
         "Выдан",
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="Когда машину отдали клиенту. Заполняется автоматически при установке статуса.",
     )
 
@@ -219,12 +213,11 @@ class WorkOrder(models.Model):
     def clean(self):
         """Валидация пробега: он не может быть меньше предыдущего."""
         super().clean()
-        
+
         # Пропускаем проверку, если пробег не менялся (например, меняем только статус в списке)
         if self.pk and self.mileage is not None:
             old_mileage = (
-                WorkOrder.objects
-                .filter(pk=self.pk)
+                WorkOrder.objects.filter(pk=self.pk)
                 .values_list("mileage", flat=True)
                 .first()
             )
@@ -244,16 +237,16 @@ class WorkOrder(models.Model):
         # Автозаполнение даты "Выдан" при статусе "Готов"
         if self.status == self.Status.READY and self.issued_at is None:
             self.issued_at = timezone.now()
-            
+
         super().save(*args, **kwargs)
-        
+
         # Обновляем пробег самой машины, если в заказе указали больше
         if self.mileage and self.car_id and self.mileage > self.car.mileage:
             self.car.mileage = self.mileage
-            self.car.save(update_fields=['mileage'])
+            self.car.save(update_fields=["mileage"])
 
     def __str__(self) -> str:
-        # Показываем номер заказа и машину. 
+        # Показываем номер заказа и машину.
         # Например: "Заказ №18 — AUDI 80 [C244PY16]"
         return f"Заказ №{self.pk} — {self.car}"
 
@@ -272,10 +265,7 @@ class WorkOrderItem(models.Model):
         verbose_name="Заказ-наряд",
     )
     category = models.CharField(
-        "Категория",
-        max_length=20,
-        choices=Category.choices,
-        default=Category.PART
+        "Категория", max_length=20, choices=Category.choices, default=Category.PART
     )
     service = models.ForeignKey(
         Service,
@@ -298,11 +288,12 @@ class WorkOrderItem(models.Model):
         help_text="Название запчасти или работы.",
     )
     master = models.ForeignKey(
-        Master, 
-        on_delete=models.SET_NULL, 
-        null=True, blank=True,
+        Master,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         verbose_name="Мастер",
-        help_text="Кто выполнил эту услугу. По умолчанию берется из заказ-наряда."
+        help_text="Кто выполнил эту услугу. По умолчанию берется из заказ-наряда.",
     )
     quantity = models.PositiveIntegerField("Кол-во", default=1)
     purchase_price = models.DecimalField(
@@ -334,7 +325,11 @@ class WorkOrderItem(models.Model):
 
     def save(self, *args, **kwargs):
         """Автоматически подставляем мастера из заказа, если он не указан."""
-        if not self.master_id and self.work_order_id and self.category == self.Category.WORK:
+        if (
+            not self.master_id
+            and self.work_order_id
+            and self.category == self.Category.WORK
+        ):
             self.master = self.work_order.master
         super().save(*args, **kwargs)
 
@@ -348,10 +343,7 @@ class WarehouseItem(models.Model):
         "Закупочная цена", max_digits=10, decimal_places=2
     )
     quantity = models.PositiveIntegerField("Количество", default=1)
-    note = models.TextField(
-        "Заметка", blank=True, 
-        help_text="Видно только в CRM."
-    )
+    note = models.TextField("Заметка", blank=True, help_text="Видно только в CRM.")
     created_at = models.DateTimeField("Добавлен", auto_now_add=True)
     updated_at = models.DateTimeField("Обновлён", auto_now=True)
 
