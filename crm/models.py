@@ -252,6 +252,11 @@ class WorkOrder(models.Model):
             self.car.mileage = self.mileage
             self.car.save(update_fields=['mileage'])
 
+    def __str__(self) -> str:
+        # Показываем номер заказа и машину. 
+        # Например: "Заказ №18 — AUDI 80 [C244PY16]"
+        return f"Заказ №{self.pk} — {self.car}"
+
 
 class WorkOrderItem(models.Model):
     """Позиция в заказ-наряде: запчасть или работа."""
