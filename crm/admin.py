@@ -7,6 +7,7 @@ from django.forms.models import (
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from decimal import Decimal
 
 import unfold
 
@@ -259,41 +260,29 @@ class MasterAdmin(unfold.admin.ModelAdmin):
     def master_work_orders(self, obj):
         if not obj or not obj.pk:
             return "—"
-
-        orders = (
-            WorkOrder.objects.filter(
-                Q(master=obj) | Q(items__master=obj, items__category="work")
-            )
-            .distinct()
-            .order_by("-created_at")
-        )
-
+        
+        orders = WorkOrder.objects.filter(
+            Q(master=obj) | Q(items__master=obj, items__category='work')
+        ).distinct().order_by("-created_at")
+        
         if not orders:
             return "У этого мастера пока нет заказов."
 
         css = """
         <style>
-            /* 1. Прячем пустую левую колонку (где должен быть заголовок), 
-                  находим её по наличию пустого label */
             .form-row:has(#master-orders-wrapper) .field-line > div:has(> label:empty) {
                 display: none !important;
             }
-
-            /* 2. Растягиваем правую колонку (с таблицей) на всю ширину */
             .form-row:has(#master-orders-wrapper) .field-line > .grow {
                 width: 100% !important;
                 max-width: 100% !important;
                 flex: 1 1 100% !important;
             }
-
-            /* 3. Снимаем ограничение ширины (max-w-2xl) у поля readonly */
             .readonly:has(#master-orders-wrapper) {
                 max-width: 100% !important;
                 width: 100% !important;
                 display: block !important;
             }
-
-            /* 4. Стили самой таблицы */
             .master-orders-table {
                 width: 100% !important;
                 border-collapse: collapse;
@@ -317,59 +306,65 @@ class MasterAdmin(unfold.admin.ModelAdmin):
             /* Фиксируем ширину мелких колонок */
             .master-orders-table th:nth-child(1), .master-orders-table td:nth-child(1) { width: 60px; white-space: nowrap; }
             .master-orders-table th:nth-child(3), .master-orders-table td:nth-child(3) { width: 100px; }
-            .master-orders-table th:nth-child(4), .master-orders-table td:nth-child(4) { width: 130px; white-space: nowrap; }
+            .master-orders-table th:nth-child(4), .master-orders-table td:nth-child(4) { width: 120px; white-space: nowrap; }
             .master-orders-table th:nth-child(5), .master-orders-table td:nth-child(5) { width: 140px; white-space: nowrap; }
+            /* Колонка заработка */
+            .master-orders-table th:nth-child(7), .master-orders-table td:nth-child(7) { width: 120px; white-space: nowrap; font-weight: bold; }
         </style>
         """
 
-        # Генерируем таблицу, добавили ID обертке, чтобы CSS точно его нашел
-        html = (
-            css
-            + '<div id="master-orders-wrapper" style="width: 100% !important; display: block; overflow-x: auto;">'
-        )
+        html = css + '<div id="master-orders-wrapper" style="width: 100% !important; display: block; overflow-x: auto;">'
         html += '<table class="master-orders-table">'
-        html += "<thead><tr>"
-        html += "<th>Заказ</th>"
-        html += "<th>Автомобиль</th>"
-        html += "<th>Статус</th>"
-        html += "<th>Дата</th>"
-        html += "<th>Роль</th>"
+        html += '<thead><tr>'
+        html += '<th>Заказ</th>'
+        html += '<th>Автомобиль</th>'
+        html += '<th>Статус</th>'
+        html += '<th>Дата</th>'
+        html += '<th>Роль</th>'
         html += '<th style="width: auto;">Выполненные услуги</th>'
-        html += "</tr></thead><tbody>"
-
+        html += '<th>Заработок мастера</th>'
+        html += '</tr></thead><tbody>'
+        
         for order in orders:
             order_url = reverse("admin:crm_workorder_change", args=[order.pk])
-            car_url = reverse("admin:crm_car_change", args=[order.car.pk])
-
+            
+            # Считаем заработок
+            earnings = Decimal('0')
+            
             if order.master_id == obj.id:
                 role = '<span style="color: #0284c7; font-weight: 600;">Основной</span>'
-                items = order.items.filter(category="work")
+                items = order.items.filter(category='work')
                 if items.exists():
-                    services = "Все: " + ", ".join(
-                        [f"{item.name} (x{item.quantity})" for item in items]
-                    )
+                    services = "Все: " + ", ".join([f"{item.name} (x{item.quantity})" for item in items])
+                    # Сумма всех работ в заказе
+                    total_price = sum((item.client_price * item.quantity) for item in items)
+                    earnings = total_price * Decimal('0.5')
                 else:
                     services = "Все (работ нет)"
             else:
                 role = '<span style="color: #10b981; font-weight: 600;">Выполнял услуги</span>'
-                items = order.items.filter(master=obj, category="work")
+                items = order.items.filter(master=obj, category='work')
                 if items.exists():
-                    services = "Частично: " + ", ".join(
-                        [f"{item.name} (x{item.quantity})" for item in items]
-                    )
+                    services = "Частично: " + ", ".join([f"{item.name} (x{item.quantity})" for item in items])
+                    # Сумма только его работ
+                    total_price = sum((item.client_price * item.quantity) for item in items)
+                    earnings = total_price * Decimal('0.5')
                 else:
                     services = "— (не найдено)"
-
-            html += f"<tr>"
+            
+            earnings_str = f"{earnings:.2f} ₽"
+            
+            html += f'<tr>'
             html += f'<td><a href="{order_url}" style="color:#e87722; font-weight:bold; text-decoration:none;">№{order.pk}</a></td>'
             html += f'<td><a href="{order_url}" style="color:#4b5563; text-decoration:none;">{order.car}</a></td>'
             html += f'<td style="color:#4b5563;">{order.get_status_display()}</td>'
             html += f'<td style="color:#4b5563;">{order.created_at.strftime("%d.%m.%Y %H:%M")}</td>'
-            html += f"<td>{role}</td>"
+            html += f'<td>{role}</td>'
             html += f'<td style="color:#4b5563;">{services}</td>'
-            html += f"</tr>"
-
-        html += "</tbody></table></div>"
+            html += f'<td style="color:#4b5563;">{earnings_str}</td>'
+            html += f'</tr>'
+        
+        html += '</tbody></table></div>'
         return mark_safe(html)
 
 
